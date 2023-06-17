@@ -18,7 +18,10 @@
 
 #include <assert.h>
 #include <dlfcn.h>
+#include <errno.h>
+#include <error.h>
 #include <fcntl.h>
+#include <libintl.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -27,6 +30,7 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <unistd_ext.h>
 
 #include <hp-timing.h>
 #include <machine-sp.h>
@@ -210,10 +214,11 @@ update_data (struct header *result, size_t len, size_t old_len)
       gettime (&buffer[idx]);
 
       /* Write out buffer if it is full.  */
-      if (idx + 1 == buffer_size)
-        write (fd, buffer, buffer_size * sizeof (struct entry));
-      else if (idx + 1 == 2 * buffer_size)
-        write (fd, &buffer[buffer_size], buffer_size * sizeof (struct entry));
+      if (idx + 1 == buffer_size || idx + 1 == 2 * buffer_size)
+        {
+	  uint32_t write_size = buffer_size * sizeof (buffer[0]);
+	  write_all (fd, &buffer[idx + 1 - buffer_size], write_size);
+        }
     }
 }
 
@@ -299,8 +304,8 @@ me (void)
               first.stack = 0;
               gettime (&first);
               /* Write it two times since we need the starting and end time. */
-              write (fd, &first, sizeof (first));
-              write (fd, &first, sizeof (first));
+	      write_all (fd, &first, sizeof (first));
+	      write_all (fd, &first, sizeof (first));
 
               /* Determine the buffer size.  We use the default if the
                  environment variable is not present.  */
@@ -850,24 +855,29 @@ dest (void)
   if (fd != -1)
     {
       /* Write the partially filled buffer.  */
+      struct entry *start = buffer;
+      uint32_t write_cnt = buffer_cnt;
+
       if (buffer_cnt > buffer_size)
-        write (fd, buffer + buffer_size,
-               (buffer_cnt - buffer_size) * sizeof (struct entry));
-      else
-        write (fd, buffer, buffer_cnt * sizeof (struct entry));
+        {
+          start = buffer + buffer_size;
+          write_cnt = buffer_cnt - buffer_size;
+        }
+
+      write_all (fd, start, write_cnt * sizeof (buffer[0]));
 
       /* Go back to the beginning of the file.  We allocated two records
          here when we opened the file.  */
       lseek (fd, 0, SEEK_SET);
       /* Write out a record containing the total size.  */
       first.stack = peak_total;
-      write (fd, &first, sizeof (struct entry));
+      write_all (fd, &first, sizeof (first));
       /* Write out another record containing the maximum for heap and
          stack.  */
       first.heap = peak_heap;
       first.stack = peak_stack;
       gettime (&first);
-      write (fd, &first, sizeof (struct entry));
+      write_all (fd, &first, sizeof (first));
 
       /* Close the file.  */
       close (fd);

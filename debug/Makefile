@@ -84,6 +84,8 @@ routines = \
   stpncpy_chk \
   strcat_chk \
   strcpy_chk \
+  strlcat_chk \
+  strlcpy_chk \
   strncat_chk \
   strncpy_chk \
   swprintf_chk \
@@ -103,6 +105,8 @@ routines = \
   wcrtomb_chk \
   wcscat_chk \
   wcscpy_chk \
+  wcslcat_chk \
+  wcslcpy_chk \
   wcsncat_chk \
   wcsncpy_chk \
   wcsnrtombs_chk \
