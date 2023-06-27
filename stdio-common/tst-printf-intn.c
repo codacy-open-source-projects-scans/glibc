@@ -1,5 +1,6 @@
-/* Support for reading /etc/ld.so.cache files written by Linux ldconfig.
-   Copyright (C) 2012-2023 Free Software Foundation, Inc.
+/* Test printf formats for intN_t, int_leastN_t and int_fastN_t types.
+   Narrow string version.
+   Copyright (C) 2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,8 +17,10 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <sysdeps/x86_64/dl-cache.h>
+#define SNPRINTF snprintf
+#define TEST_COMPARE_STRING_MACRO TEST_COMPARE_STRING
+#define STRLEN strlen
+#define CHAR char
+#define L_(C) C
 
-/* Defined as (FLAG_ELF_LIBC6 | FLAG_X8664_LIBX32).  */
-#undef _DL_CACHE_DEFAULT_ID
-#define _DL_CACHE_DEFAULT_ID	0x803
+#include <tst-printf-intn-main.c>

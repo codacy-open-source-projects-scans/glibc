@@ -1,5 +1,5 @@
-/* Support for reading /etc/ld.so.cache files written by Linux ldconfig.
-   Copyright (C) 2012-2023 Free Software Foundation, Inc.
+/* Error-checking wrappers for stdlib functions.
+   Copyright (C) 2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,8 +16,16 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <sysdeps/x86_64/dl-cache.h>
+#ifndef SUPPORT_XSTDLIB_H
+#define SUPPORT_XSTDLIB_H
 
-/* Defined as (FLAG_ELF_LIBC6 | FLAG_X8664_LIBX32).  */
-#undef _DL_CACHE_DEFAULT_ID
-#define _DL_CACHE_DEFAULT_ID	0x803
+#include <stdlib.h>
+#include <sys/cdefs.h>
+
+__BEGIN_DECLS
+
+void xsystem (const char *cmd);
+
+__END_DECLS
+
+#endif /* SUPPORT_XSTDLIB_H */

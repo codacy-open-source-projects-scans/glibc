@@ -197,6 +197,7 @@ libsupport-routines = \
   xpthread_spin_lock \
   xpthread_spin_unlock \
   xraise \
+  xread \
   xreadlink \
   xrealloc \
   xrecvfrom \
@@ -211,6 +212,7 @@ libsupport-routines = \
   xstrndup \
   xsymlink \
   xsysconf \
+  xsystem \
   xunlink \
   xuselocale \
   xwaitpid \
