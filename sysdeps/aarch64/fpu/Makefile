@@ -1,16 +1,20 @@
-float-advsimd-funcs = cos
+libmvec-supported-funcs = cos \
+                          exp \
+                          log \
+                          sin
 
-double-advsimd-funcs = cos
-
-float-sve-funcs = cos
-
-double-sve-funcs = cos
+float-advsimd-funcs = $(libmvec-supported-funcs)
+double-advsimd-funcs = $(libmvec-supported-funcs)
+float-sve-funcs = $(libmvec-supported-funcs)
+double-sve-funcs = $(libmvec-supported-funcs)
 
 ifeq ($(subdir),mathvec)
 libmvec-support = $(addsuffix f_advsimd,$(float-advsimd-funcs)) \
                   $(addsuffix _advsimd,$(double-advsimd-funcs)) \
                   $(addsuffix f_sve,$(float-sve-funcs)) \
-                  $(addsuffix _sve,$(double-sve-funcs))
+                  $(addsuffix _sve,$(double-sve-funcs)) \
+                  v_log_data \
+                  v_exp_data
 endif
 
 sve-cflags = -march=armv8-a+sve

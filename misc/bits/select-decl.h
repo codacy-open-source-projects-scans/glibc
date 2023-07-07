@@ -1,5 +1,4 @@
-/* Helpers for Advanced SIMD vector math functions.
-
+/* Checking routines for select functions. Declaration only.
    Copyright (C) 2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -17,23 +16,16 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <arm_neon.h>
+#ifndef _BITS_SELECT_DECL_H
+#define _BITS_SELECT_DECL_H 1
 
-#define VPCS_ATTR __attribute__ ((aarch64_vector_pcs))
+#ifndef _SYS_SELECT_H
+# error "Never include <bits/select-decl.h> directly; use <sys/select.h> instead."
+#endif
 
-#define V_NAME_F1(fun) _ZGVnN4v_##fun##f
-#define V_NAME_D1(fun) _ZGVnN2v_##fun
-#define V_NAME_F2(fun) _ZGVnN4vv_##fun##f
-#define V_NAME_D2(fun) _ZGVnN2vv_##fun
+/* Helper functions to issue warnings and errors when needed.  */
+extern long int __fdelt_chk (long int __d);
+extern long int __fdelt_warn (long int __d)
+  __warnattr ("bit outside of fd_set selected");
 
-static __always_inline float32x4_t
-v_call_f32 (float (*f) (float), float32x4_t x)
-{
-  return (float32x4_t){ f (x[0]), f (x[1]), f (x[2]), f (x[3]) };
-}
-
-static __always_inline float64x2_t
-v_call_f64 (double (*f) (double), float64x2_t x)
-{
-  return (float64x2_t){ f (x[0]), f (x[1]) };
-}
+#endif

@@ -117,6 +117,19 @@ routines := \
   wprintf_function_invoke \
   # routines
 
+# Exclude fortified routines from being built with _FORTIFY_SOURCE
+routines_no_fortify += \
+  asprintf \
+  dprintf \
+  fprintf \
+  printf \
+  snprintf \
+  sprintf \
+  vfprintf \
+  vfwprintf \
+  vprintf \
+  # routines_no_fortify
+
 aux := \
   errlist \
   errlist-data \
@@ -231,6 +244,7 @@ tests := \
   tst-scanf-binary-gnu11 \
   tst-scanf-binary-gnu89 \
   tst-scanf-round \
+  tst-scanf-to_inpunct \
   tst-setvbuf1 \
   tst-sprintf \
   tst-sprintf-errno \
@@ -347,6 +361,7 @@ LOCALES := \
   de_DE.ISO-8859-1 \
   de_DE.UTF-8 \
   en_US.ISO-8859-1 \
+  fa_IR.UTF-8 \
   hi_IN.UTF-8 \
   ja_JP.EUC-JP \
   ps_AF.UTF-8 \
@@ -366,6 +381,7 @@ $(objpfx)tst-swprintf.out: $(gen-locales)
 $(objpfx)tst-vfprintf-mbs-prec.out: $(gen-locales)
 $(objpfx)tst-vfprintf-width-i18n.out: $(gen-locales)
 $(objpfx)tst-grouping3.out: $(gen-locales)
+$(objpfx)tst-scanf-to_inpunct.out: $(gen-locales)
 endif
 
 tst-printf-bz18872-ENV = MALLOC_TRACE=$(objpfx)tst-printf-bz18872.mtrace \
@@ -461,7 +477,7 @@ CFLAGS-tst-gets.c += -Wno-deprecated-declarations
 
 # BZ #11319 was first fixed for regular vdprintf, then reopened because
 # the fortified version had the same bug.
-CFLAGS-tst-bz11319-fortify2.c += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+CFLAGS-tst-bz11319-fortify2.c += $(no-fortify-source),-D_FORTIFY_SOURCE=2
 
 CFLAGS-tst-memstream-string.c += -fno-builtin-fprintf
 

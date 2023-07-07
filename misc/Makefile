@@ -64,10 +64,12 @@ headers	:= \
   sys/xattr.h \
   syslog.h \
   sys/syslog.h \
+  bits/syslog-decl.h \
   bits/syslog.h \
   bits/syslog-ldbl.h \
   bits/syslog-path.h \
   bits/error.h \
+  bits/select-decl.h \
   bits/select2.h \
   bits/hwcap.h \
   sys/auxv.h \
@@ -204,6 +206,13 @@ routines := \
   vhangup \
   writev \
   # routines
+
+# Exclude fortified routines from being built with _FORTIFY_SOURCE
+routines_no_fortify += \
+  getdomain \
+  gethostname \
+  syslog \
+  # routines_no_fortify
 
 generated += \
   tst-allocate_once-mem.out \

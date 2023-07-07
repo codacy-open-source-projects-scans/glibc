@@ -642,7 +642,7 @@ float: 1
 ldouble: 2
 
 Function: "cos_advsimd":
-double: 1
+double: 2
 float: 1
 
 Function: "cos_downward":
@@ -1005,7 +1005,15 @@ double: 1
 float: 1
 ldouble: 2
 
+Function: "exp_advsimd":
+double: 1
+float: 1
+
 Function: "exp_downward":
+double: 1
+float: 1
+
+Function: "exp_sve":
 double: 1
 float: 1
 
@@ -1219,9 +1227,17 @@ double: 3
 float: 3
 ldouble: 1
 
+Function: "log_advsimd":
+double: 1
+float: 3
+
 Function: "log_downward":
 float: 2
 ldouble: 1
+
+Function: "log_sve":
+double: 1
+float: 3
 
 Function: "log_towardzero":
 float: 2
@@ -1257,10 +1273,18 @@ double: 1
 float: 1
 ldouble: 2
 
+Function: "sin_advsimd":
+double: 2
+float: 1
+
 Function: "sin_downward":
 double: 1
 float: 1
 ldouble: 3
+
+Function: "sin_sve":
+double: 2
+float: 1
 
 Function: "sin_towardzero":
 double: 1

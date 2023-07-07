@@ -121,6 +121,27 @@ routines := \
   wmemset \
   # routines
 
+# Exclude fortified routines from being built with _FORTIFY_SOURCE
+routines_no_fortify += \
+  mbsnrtowcs \
+  mbsrtowcs \
+  wcpcpy \
+  wcpncpy \
+  wcrtomb \
+  wcscat \
+  wcscpy \
+  wcslcat \
+  wcslcpy \
+  wcsncat \
+  wcsncpy \
+  wcsnrtombs \
+  wcsrtombs \
+  wmemcpy \
+  wmemmove \
+  wmempcpy \
+  wmemset \
+  # routines_no_fortify
+
 tests := \
   test-c8rtomb \
   test-char-types \
@@ -175,6 +196,7 @@ tests := \
   tst-wscanf-binary-c2x \
   tst-wscanf-binary-gnu11 \
   tst-wscanf-binary-gnu89 \
+  tst-wscanf-to_inpunct \
   wcsatcliff \
   wcsmbs-tst1 \
   # tests
@@ -186,6 +208,7 @@ LOCALES := \
   de_DE.ISO-8859-1 \
   de_DE.UTF-8 \
   en_US.ANSI_X3.4-1968 \
+  fa_IR.UTF-8 \
   hr_HR.ISO-8859-2 \
   ja_JP.EUC-JP \
   tr_TR.ISO-8859-9 \
@@ -207,6 +230,7 @@ $(objpfx)tst-c16-surrogate.out: $(gen-locales)
 $(objpfx)tst-c32-state.out: $(gen-locales)
 $(objpfx)test-c8rtomb.out: $(gen-locales)
 $(objpfx)test-mbrtoc8.out: $(gen-locales)
+$(objpfx)tst-wscanf-to_inpunct.out: $(gen-locales)
 endif
 
 $(objpfx)tst-wcstod-round: $(libm)
@@ -231,7 +255,7 @@ CFLAGS-wcstod_l.c += $(strtox-CFLAGS) $(config-cflags-wno-ignored-attributes)
 CFLAGS-wcstold_l.c += $(strtox-CFLAGS) $(config-cflags-wno-ignored-attributes)
 CFLAGS-wcstof128_l.c += $(strtox-CFLAGS)
 CFLAGS-wcstof_l.c += $(strtox-CFLAGS) $(config-cflags-wno-ignored-attributes)
-CPPFLAGS-tst-wchar-h.c += -D_FORTIFY_SOURCE=2
+CPPFLAGS-tst-wchar-h.c += $(no-fortify-source),-D_FORTIFY_SOURCE=2
 
 CFLAGS-wcschr.c += $(config-cflags-wno-ignored-attributes)
 CFLAGS-wmemchr.c += $(config-cflags-wno-ignored-attributes)

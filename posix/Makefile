@@ -42,6 +42,7 @@ headers := \
   bits/types/idtype_t.h \
   bits/types/struct_sched_param.h \
   bits/typesizes.h \
+  bits/unistd-decl.h \
   bits/unistd.h \
   bits/unistd_ext.h \
   bits/utsname.h \
@@ -182,6 +183,14 @@ routines := \
   waitpid \
   wordexp \
   # routines
+
+# Exclude fortified routines from being built with _FORTIFY_SOURCE
+routines_no_fortify += \
+  confstr \
+  getgroups \
+  pread \
+  pread64 \
+  # routines_no_fortify
 
 aux := \
   environ \
@@ -603,6 +612,9 @@ tst-boost-ARGS = BOOST.tests
 bug-glob1-ARGS = "$(objpfx)"
 tst-execvp3-ARGS = --test-dir=$(objpfx)
 CFLAGS-tst-spawn3.c += -DOBJPFX=\"$(objpfx)\"
+
+# Test voluntarily overflows struct dirent
+CFLAGS-bug-glob2.c += $(no-fortify-source)
 
 $(objpfx)testcases.h: TESTS TESTS2C.sed
 	LC_ALL=C sed -f TESTS2C.sed < $< > $@T

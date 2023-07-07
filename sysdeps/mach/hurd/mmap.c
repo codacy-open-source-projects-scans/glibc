@@ -38,12 +38,15 @@ __mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset)
   vm_prot_t vmprot, max_vmprot;
   memory_object_t memobj;
   vm_address_t mapaddr, mask;
-  boolean_t copy;
+  boolean_t copy, anywhere;
 
   mapaddr = (vm_address_t) addr;
 
   /* ADDR and OFFSET must be page-aligned.  */
   if ((mapaddr & (__vm_page_size - 1)) || (offset & (__vm_page_size - 1)))
+    return (void *) (long int) __hurd_fail (EINVAL);
+
+  if ((flags & MAP_EXCL) && ! (flags & MAP_FIXED))
     return (void *) (long int) __hurd_fail (EINVAL);
 
   vmprot = VM_PROT_NONE;
@@ -55,6 +58,7 @@ __mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset)
     vmprot |= VM_PROT_EXECUTE;
 
   copy = ! (flags & MAP_SHARED);
+  anywhere = ! (flags & MAP_FIXED);
 
 #ifdef __LP64__
   if ((addr == NULL) && (prot & PROT_EXEC)
@@ -141,9 +145,12 @@ __mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset)
   if (copy)
     max_vmprot = VM_PROT_ALL;
 
+  /* When ANYWHERE is true but the caller has provided a preferred address,
+     try mapping at that address with anywhere = 0 first.  If this fails,
+     we'll retry with anywhere = 1 below.  */
   err = __vm_map (__mach_task_self (),
 		  &mapaddr, (vm_size_t) len, mask,
-		  mapaddr == 0,
+		  anywhere && (mapaddr == 0),
 		  memobj, (vm_offset_t) offset,
 		  copy, vmprot, max_vmprot,
 		  copy ? VM_INHERIT_COPY : VM_INHERIT_SHARE);
@@ -152,20 +159,28 @@ __mmap (void *addr, size_t len, int prot, int flags, int fd, off_t offset)
     {
       if (err == KERN_NO_SPACE)
 	{
-	  /* XXX this is not atomic as it is in unix! */
-	  /* The region is already allocated; deallocate it first.  */
-	  err = __vm_deallocate (__mach_task_self (), mapaddr, len);
-	  if (! err)
-	    err = __vm_map (__mach_task_self (),
-			    &mapaddr, (vm_size_t) len, mask,
-			    0, memobj, (vm_offset_t) offset,
-			    copy, vmprot, max_vmprot,
-			    copy ? VM_INHERIT_COPY : VM_INHERIT_SHARE);
+	  if (flags & MAP_EXCL)
+	    err = EEXIST;
+	  else
+	    {
+	      /* The region is already allocated; deallocate it first.  */
+	      /* XXX this is not atomic as it is in unix! */
+	      err = __vm_deallocate (__mach_task_self (), mapaddr, len);
+	      if (! err)
+		err = __vm_map (__mach_task_self (),
+				&mapaddr, (vm_size_t) len, mask,
+				0, memobj, (vm_offset_t) offset,
+				copy, vmprot, max_vmprot,
+				copy ? VM_INHERIT_COPY : VM_INHERIT_SHARE);
+	    }
 	}
     }
   else
     {
+      /* This mmap call is allowed to allocate anywhere,  */
       if (mapaddr != 0 && (err == KERN_NO_SPACE || err == KERN_INVALID_ADDRESS))
+        /* ...but above, we tried allocating at the specific address,
+           and failed to.  Now try again, with anywhere = 1 this time.  */
 	err = __vm_map (__mach_task_self (),
 			&mapaddr, (vm_size_t) len, mask,
 			1, memobj, (vm_offset_t) offset,
