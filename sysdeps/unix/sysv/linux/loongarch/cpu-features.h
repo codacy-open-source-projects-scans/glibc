@@ -1,6 +1,6 @@
-/* Checking memcpy for i386.
-   Copyright (C) 2004-2023 Free Software Foundation, Inc.
+/* Initialize CPU feature data.  LoongArch64 version.
    This file is part of the GNU C Library.
+   Copyright (C) 2022 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -14,22 +14,16 @@
 
    You should have received a copy of the GNU Lesser General Public
    License along with the GNU C Library; if not, see
-   <https://www.gnu.org/licenses/>.  */
+   <http://www.gnu.org/licenses/>.  */
 
-#ifndef SHARED
-# include <sysdep.h>
-# include "asm-syntax.h"
+#ifndef _CPU_FEATURES_LOONGARCH64_H
+#define _CPU_FEATURES_LOONGARCH64_H
 
-	/* For libc.so this is defined in memcpy.S.
-	   For libc.a, this is a separate source to avoid
-	   memcpy bringing in __chk_fail and all routines
-	   it calls.  */
-        .text
-ENTRY (__memcpy_chk)
-	movl	12(%esp), %eax
-	cmpl	%eax, 16(%esp)
-	jb	HIDDEN_JUMPTARGET (__chk_fail)
-	jmp	JUMPTARGET (memcpy)
-END (__memcpy_chk)
-libc_hidden_builtin_def (__memcpy_chk)
-#endif
+#include <sys/auxv.h>
+
+#define SUPPORT_UAL (GLRO (dl_hwcap) & HWCAP_LOONGARCH_UAL)
+#define SUPPORT_LSX (GLRO (dl_hwcap) & HWCAP_LOONGARCH_LSX)
+#define SUPPORT_LASX (GLRO (dl_hwcap) & HWCAP_LOONGARCH_LASX)
+
+#endif /* _CPU_FEATURES_LOONGARCH64_H  */
+
