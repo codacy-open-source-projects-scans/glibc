@@ -231,7 +231,7 @@ AC_ARG_ENABLE([stack-protector],
 	      [enable_stack_protector=no])
 case "$enable_stack_protector" in
 all|yes|no|strong) ;;
-*) AC_MSG_ERROR([Not a valid argument for --enable-stack-protector: \"$enable_stack_protector\"]);;
+*) AC_MSG_ERROR([Not a valid argument for --enable-stack-protector: "$enable_stack_protector"]);;
 esac
 
 dnl On some platforms we cannot use dynamic loading.  We must provide
@@ -316,10 +316,10 @@ fi
 AC_SUBST(memory_tagging)
 
 AC_ARG_ENABLE([crypt],
-              AS_HELP_STRING([--disable-crypt],
-                             [do not build nor install the passphrase hashing library, libcrypt]),
+              AS_HELP_STRING([--enable-crypt],
+                             [build and install the legacy passphrase hashing library, libcrypt]),
               [build_crypt=$enableval],
-              [build_crypt=yes])
+              [build_crypt=no])
 AC_SUBST(build_crypt)
 
 AC_ARG_ENABLE([nss-crypt],
@@ -459,7 +459,7 @@ AC_ARG_ENABLE([cet],
 	      [enable_cet=$libc_cv_compiler_default_cet])
 
 AC_ARG_ENABLE([scv],
-	      AC_HELP_STRING([--disable-scv],
+	      AS_HELP_STRING([--disable-scv],
 			     [syscalls will not use scv instruction, even if the kernel supports it, powerpc only]),
 	      [use_scv=$enableval],
 	      [use_scv=yes])
@@ -1578,17 +1578,17 @@ dnl support it
 no_fortify_source="-Wp,-U_FORTIFY_SOURCE"
 fortify_source="${no_fortify_source}"
 
-AC_CACHE_CHECK([for __builtin_dynamic_object_size], [libc_cv___builtin_dynamic_object_size], [
+AC_CACHE_CHECK([for maximum supported _FORTIFY_SOURCE level],
+	       [libc_cv_supported_fortify_source], [
     AC_LINK_IFELSE([AC_LANG_PROGRAM([], [__builtin_dynamic_object_size("", 0)])],
-        [libc_cv___builtin_dynamic_object_size=yes
-         AS_IF([test "$enable_fortify_source" = yes], [enable_fortify_source=3])],
-        [libc_cv___builtin_dynamic_object_size=no
-         AS_IF([test "$enable_fortify_source" = yes], [enable_fortify_source=2])])
+        [libc_cv_supported_fortify_source=3],
+        [libc_cv_supported_fortify_source=2])
 ])
 
 AS_CASE([$enable_fortify_source],
+        [yes], [libc_cv_fortify_source=yes enable_fortify_source=$libc_cv_supported_fortify_source],
         [1|2], [libc_cv_fortify_source=yes],
-        [3], [AS_IF([test "$libc_cv___builtin_dynamic_object_size" = yes],
+        [3], [AS_IF([test $libc_cv_supported_fortify_source = 3],
                     [libc_cv_fortify_source=yes],
                     [AC_MSG_ERROR([Compiler doesn't provide necessary support for _FORTIFY_SOURCE=3])])],
         [libc_cv_fortify_source=no])
@@ -1601,6 +1601,7 @@ AC_SUBST(enable_fortify_source)
 AC_SUBST(libc_cv_fortify_source)
 AC_SUBST(no_fortify_source)
 AC_SUBST(fortify_source)
+LIBC_CONFIG_VAR([supported-fortify], [$libc_cv_supported_fortify_source])
 
 dnl Starting with binutils 2.35, GAS can attach multiple symbol versions
 dnl to one symbol (PR 23840).
