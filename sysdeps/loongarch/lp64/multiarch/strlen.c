@@ -1,6 +1,6 @@
-/* Multiple versions of __memmove_chk
+/* Multiple versions of strlen.
    All versions must be listed in ifunc-impl-list.c.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,21 +17,21 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-/* Define multiple versions only for the definition in libc.so. */
-#if IS_IN (libc) && defined SHARED
-# define __memmove_chk __redirect_memmove_chk
+/* Define multiple versions only for the definition in libc.  */
+
+#if IS_IN (libc)
+# define strlen __redirect_strlen
 # include <string.h>
-# undef __memmove_chk
+# undef strlen
 
-# define SYMBOL_NAME memmove_chk
-# include "ifunc-memmove.h"
+# define SYMBOL_NAME strlen
+# include "ifunc-strlen.h"
 
-libc_ifunc_redirected (__redirect_memmove_chk, __memmove_chk,
-		       IFUNC_SELECTOR ());
+libc_ifunc_redirected (__redirect_strlen, strlen, IFUNC_SELECTOR ());
+
 # ifdef SHARED
-__hidden_ver1 (__memmove_chk, __GI___memmove_chk, __redirect_memmove_chk)
-  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (__memmove_chk);
+__hidden_ver1 (strlen, __GI_strlen, __redirect_strlen)
+  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (strlen);
 # endif
-#else
-# include <debug/memmove_chk.c>
+
 #endif

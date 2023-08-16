@@ -1,6 +1,5 @@
-/* Multiple versions of __memmove_chk
-   All versions must be listed in ifunc-impl-list.c.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+/* Multiple versions of expm1.
+   Copyright (C) 2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,21 +16,21 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-/* Define multiple versions only for the definition in libc.so. */
-#if IS_IN (libc) && defined SHARED
-# define __memmove_chk __redirect_memmove_chk
-# include <string.h>
-# undef __memmove_chk
+#include <libm-alias-double.h>
 
-# define SYMBOL_NAME memmove_chk
-# include "ifunc-memmove.h"
+extern double __redirect_expm1 (double);
 
-libc_ifunc_redirected (__redirect_memmove_chk, __memmove_chk,
-		       IFUNC_SELECTOR ());
-# ifdef SHARED
-__hidden_ver1 (__memmove_chk, __GI___memmove_chk, __redirect_memmove_chk)
-  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (__memmove_chk);
-# endif
-#else
-# include <debug/memmove_chk.c>
-#endif
+#define SYMBOL_NAME expm1
+#include "ifunc-fma.h"
+
+libc_ifunc_redirected (__redirect_expm1, __expm1, IFUNC_SELECTOR ());
+libm_alias_double (__expm1, expm1)
+
+#define __expm1 __expm1_sse2
+
+/* NB: __expm1 may be expanded to __expm1_sse2 in the following
+   prototypes.  */
+extern long double __expm1l (long double);
+extern long double __expm1f128 (long double);
+
+#include <sysdeps/ieee754/dbl-64/s_expm1.c>

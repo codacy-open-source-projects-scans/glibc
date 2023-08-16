@@ -1,6 +1,6 @@
-/* Multiple versions of __memmove_chk
+/* Common definition for strlen ifunc selections.
    All versions must be listed in ifunc-impl-list.c.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,21 +17,24 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-/* Define multiple versions only for the definition in libc.so. */
-#if IS_IN (libc) && defined SHARED
-# define __memmove_chk __redirect_memmove_chk
-# include <string.h>
-# undef __memmove_chk
+#include <ldsodefs.h>
+#include <ifunc-init.h>
 
-# define SYMBOL_NAME memmove_chk
-# include "ifunc-memmove.h"
-
-libc_ifunc_redirected (__redirect_memmove_chk, __memmove_chk,
-		       IFUNC_SELECTOR ());
-# ifdef SHARED
-__hidden_ver1 (__memmove_chk, __GI___memmove_chk, __redirect_memmove_chk)
-  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (__memmove_chk);
-# endif
-#else
-# include <debug/memmove_chk.c>
+#if !defined __loongarch_soft_float
+extern __typeof (REDIRECT_NAME) OPTIMIZE (lasx) attribute_hidden;
+extern __typeof (REDIRECT_NAME) OPTIMIZE (lsx) attribute_hidden;
 #endif
+extern __typeof (REDIRECT_NAME) OPTIMIZE (aligned) attribute_hidden;
+
+static inline void *
+IFUNC_SELECTOR (void)
+{
+#if !defined __loongarch_soft_float
+  if (SUPPORT_LASX)
+    return OPTIMIZE (lasx);
+  else if (SUPPORT_LSX)
+    return OPTIMIZE (lsx);
+  else
+#endif
+    return OPTIMIZE (aligned);
+}

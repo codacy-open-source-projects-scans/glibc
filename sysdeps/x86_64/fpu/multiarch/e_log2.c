@@ -1,6 +1,5 @@
-/* Multiple versions of __memmove_chk
-   All versions must be listed in ifunc-impl-list.c.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+/* Multiple versions of log2.
+   Copyright (C) 2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,21 +16,28 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-/* Define multiple versions only for the definition in libc.so. */
-#if IS_IN (libc) && defined SHARED
-# define __memmove_chk __redirect_memmove_chk
-# include <string.h>
-# undef __memmove_chk
+#include <libm-alias-double.h>
+#include <libm-alias-finite.h>
 
-# define SYMBOL_NAME memmove_chk
-# include "ifunc-memmove.h"
+extern double __redirect_log2 (double);
 
-libc_ifunc_redirected (__redirect_memmove_chk, __memmove_chk,
-		       IFUNC_SELECTOR ());
-# ifdef SHARED
-__hidden_ver1 (__memmove_chk, __GI___memmove_chk, __redirect_memmove_chk)
-  __attribute__ ((visibility ("hidden"))) __attribute_copy__ (__memmove_chk);
-# endif
+#define SYMBOL_NAME log2
+#include "ifunc-fma.h"
+
+libc_ifunc_redirected (__redirect_log2, __log2, IFUNC_SELECTOR ());
+
+#ifdef SHARED
+__hidden_ver1 (__log2, __GI___log2, __redirect_log2)
+  __attribute__ ((visibility ("hidden")));
+
+versioned_symbol (libm, __ieee754_log2, log2, GLIBC_2_29);
+libm_alias_double_other (__log2, log2)
 #else
-# include <debug/memmove_chk.c>
+libm_alias_double (__log2, log2)
 #endif
+
+strong_alias (__log2, __ieee754_log2)
+libm_alias_finite (__log2, __log2)
+
+#define __log2 __log2_sse2
+#include <sysdeps/ieee754/dbl-64/e_log2.c>
