@@ -37,5 +37,62 @@ __libc_ifunc_impl_list (const char *name, struct libc_ifunc_impl *array,
 #endif
 	      IFUNC_IMPL_ADD (array, i, strlen, 1, __strlen_aligned)
 	      )
+
+  IFUNC_IMPL (i, name, strnlen,
+#if !defined __loongarch_soft_float
+	      IFUNC_IMPL_ADD (array, i, strnlen, SUPPORT_LASX, __strnlen_lasx)
+	      IFUNC_IMPL_ADD (array, i, strnlen, SUPPORT_LSX, __strnlen_lsx)
+#endif
+	      IFUNC_IMPL_ADD (array, i, strnlen, 1, __strnlen_aligned)
+	      )
+
+  IFUNC_IMPL (i, name, strchr,
+#if !defined __loongarch_soft_float
+	      IFUNC_IMPL_ADD (array, i, strchr, SUPPORT_LASX, __strchr_lasx)
+	      IFUNC_IMPL_ADD (array, i, strchr, SUPPORT_LSX, __strchr_lsx)
+#endif
+	      IFUNC_IMPL_ADD (array, i, strchr, 1, __strchr_aligned)
+	      )
+
+  IFUNC_IMPL (i, name, strchrnul,
+#if !defined __loongarch_soft_float
+	      IFUNC_IMPL_ADD (array, i, strchrnul, SUPPORT_LASX, __strchrnul_lasx)
+	      IFUNC_IMPL_ADD (array, i, strchrnul, SUPPORT_LSX, __strchrnul_lsx)
+#endif
+	      IFUNC_IMPL_ADD (array, i, strchrnul, 1, __strchrnul_aligned)
+	      )
+
+  IFUNC_IMPL (i, name, strcmp,
+#if !defined __loongarch_soft_float
+	      IFUNC_IMPL_ADD (array, i, strcmp, SUPPORT_LSX, __strcmp_lsx)
+#endif
+	      IFUNC_IMPL_ADD (array, i, strcmp, 1, __strcmp_aligned)
+	      )
+
+  IFUNC_IMPL (i, name, strncmp,
+#if !defined __loongarch_soft_float
+	      IFUNC_IMPL_ADD (array, i, strncmp, SUPPORT_LSX, __strncmp_lsx)
+#endif
+	      IFUNC_IMPL_ADD (array, i, strncmp, 1, __strncmp_aligned)
+	      )
+
+  IFUNC_IMPL (i, name, memcpy,
+#if !defined __loongarch_soft_float
+              IFUNC_IMPL_ADD (array, i, memcpy, SUPPORT_LASX, __memcpy_lasx)
+              IFUNC_IMPL_ADD (array, i, memcpy, SUPPORT_LSX, __memcpy_lsx)
+#endif
+              IFUNC_IMPL_ADD (array, i, memcpy, SUPPORT_UAL, __memcpy_unaligned)
+              IFUNC_IMPL_ADD (array, i, memcpy, 1, __memcpy_aligned)
+              )
+
+  IFUNC_IMPL (i, name, memmove,
+#if !defined __loongarch_soft_float
+              IFUNC_IMPL_ADD (array, i, memmove, SUPPORT_LASX, __memmove_lasx)
+              IFUNC_IMPL_ADD (array, i, memmove, SUPPORT_LSX, __memmove_lsx)
+#endif
+              IFUNC_IMPL_ADD (array, i, memmove, SUPPORT_UAL, __memmove_unaligned)
+              IFUNC_IMPL_ADD (array, i, memmove, 1, __memmove_aligned)
+              )
+
   return i;
 }
