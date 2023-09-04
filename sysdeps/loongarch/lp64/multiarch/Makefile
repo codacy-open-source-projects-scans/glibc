@@ -21,5 +21,21 @@ sysdep_routines += \
   memmove-unaligned \
   memmove-lsx \
   memmove-lasx \
+  rawmemchr-aligned \
+  rawmemchr-lsx \
+  rawmemchr-lasx \
+  memchr-aligned \
+  memchr-lsx \
+  memchr-lasx \
+  memrchr-generic \
+  memrchr-lsx \
+  memrchr-lasx \
+  memset-aligned \
+  memset-unaligned \
+  memset-lsx \
+  memset-lasx \
+  memcmp-aligned \
+  memcmp-lsx \
+  memcmp-lasx \
 # sysdep_routines
 endif

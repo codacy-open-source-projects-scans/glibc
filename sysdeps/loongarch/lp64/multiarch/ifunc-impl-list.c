@@ -94,5 +94,45 @@ __libc_ifunc_impl_list (const char *name, struct libc_ifunc_impl *array,
               IFUNC_IMPL_ADD (array, i, memmove, 1, __memmove_aligned)
               )
 
+  IFUNC_IMPL (i, name, rawmemchr,
+#if !defined __loongarch_soft_float
+	      IFUNC_IMPL_ADD (array, i, rawmemchr, SUPPORT_LASX, __rawmemchr_lasx)
+	      IFUNC_IMPL_ADD (array, i, rawmemchr, SUPPORT_LSX, __rawmemchr_lsx)
+#endif
+	      IFUNC_IMPL_ADD (array, i, rawmemchr, 1, __rawmemchr_aligned)
+	      )
+
+  IFUNC_IMPL (i, name, memchr,
+#if !defined __loongarch_soft_float
+	      IFUNC_IMPL_ADD (array, i, memchr, SUPPORT_LASX, __memchr_lasx)
+	      IFUNC_IMPL_ADD (array, i, memchr, SUPPORT_LSX, __memchr_lsx)
+#endif
+	      IFUNC_IMPL_ADD (array, i, memchr, 1, __memchr_aligned)
+	      )
+
+  IFUNC_IMPL (i, name, memrchr,
+#if !defined __loongarch_soft_float
+	      IFUNC_IMPL_ADD (array, i, memrchr, SUPPORT_LASX, __memrchr_lasx)
+	      IFUNC_IMPL_ADD (array, i, memrchr, SUPPORT_LSX, __memrchr_lsx)
+#endif
+	      IFUNC_IMPL_ADD (array, i, memrchr, 1, __memrchr_generic)
+	      )
+
+  IFUNC_IMPL (i, name, memset,
+#if !defined __loongarch_soft_float
+	      IFUNC_IMPL_ADD (array, i, memset, SUPPORT_LASX, __memset_lasx)
+	      IFUNC_IMPL_ADD (array, i, memset, SUPPORT_LSX, __memset_lsx)
+#endif
+	      IFUNC_IMPL_ADD (array, i, memset, SUPPORT_UAL, __memset_unaligned)
+	      IFUNC_IMPL_ADD (array, i, memset, 1, __memset_aligned)
+	      )
+
+  IFUNC_IMPL (i, name, memcmp,
+#if !defined __loongarch_soft_float
+	      IFUNC_IMPL_ADD (array, i, memcmp, SUPPORT_LASX, __memcmp_lasx)
+	      IFUNC_IMPL_ADD (array, i, memcmp, SUPPORT_LSX, __memcmp_lsx)
+#endif
+	      IFUNC_IMPL_ADD (array, i, memcmp, 1, __memcmp_aligned)
+	      )
   return i;
 }
