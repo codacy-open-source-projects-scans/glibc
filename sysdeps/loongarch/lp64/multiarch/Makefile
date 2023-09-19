@@ -9,6 +9,9 @@ sysdep_routines += \
   strchr-aligned \
   strchr-lsx \
   strchr-lasx \
+  strrchr-aligned \
+  strrchr-lsx \
+  strrchr-lasx \
   strchrnul-aligned \
   strchrnul-lsx \
   strchrnul-lasx \
@@ -16,6 +19,14 @@ sysdep_routines += \
   strcmp-lsx \
   strncmp-aligned \
   strncmp-lsx \
+  strcpy-aligned \
+  strcpy-unaligned \
+  strcpy-lsx \
+  strcpy-lasx \
+  stpcpy-aligned \
+  stpcpy-unaligned \
+  stpcpy-lsx \
+  stpcpy-lasx \
   memcpy-aligned \
   memcpy-unaligned \
   memmove-unaligned \

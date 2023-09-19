@@ -34,4 +34,8 @@
 #undef __ASSUME_CLONE_DEFAULT
 #define __ASSUME_CLONE2
 
+/* ia64 does not provide clone3.  */
+#undef __ASSUME_CLONE3
+#define __ASSUME_CLONE3 0
+
 #endif /* _KERNEL_FEATURES_H */

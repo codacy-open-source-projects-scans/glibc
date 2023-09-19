@@ -29,6 +29,8 @@
 #include <dl-static-tls.h>
 #include <dl-machine-rel.h>
 
+#include <cpu-features.c>
+
 #ifndef _RTLD_PROLOGUE
 # define _RTLD_PROLOGUE(entry)					\
 	".globl\t" __STRING (entry) "\n\t"			\
@@ -52,6 +54,23 @@
 
 #define ELF_MACHINE_NO_REL 1
 #define ELF_MACHINE_NO_RELA 0
+
+#define DL_PLATFORM_INIT dl_platform_init ()
+
+static inline void __attribute__ ((unused))
+dl_platform_init (void)
+{
+  if (GLRO(dl_platform) != NULL && *GLRO(dl_platform) == '\0')
+    /* Avoid an empty string which would disturb us.  */
+    GLRO(dl_platform) = NULL;
+
+#ifdef SHARED
+  /* init_cpu_features has been called early from __libc_start_main in
+     static executable.  */
+  init_cpu_features (&GLRO(dl_larch_cpu_features));
+#endif
+}
+
 
 /* Return nonzero iff ELF header is compatible with the running host.  */
 static inline int
@@ -90,7 +109,7 @@ static inline ElfW (Addr) elf_machine_dynamic (void)
 	or	$a0, $sp, $zero   \n\
 	bl	_dl_start   \n\
 	# Stash user entry point in s0.   \n\
-	or	$s0, $v0, $zero   \n\
+	or	$s0, $a0, $zero   \n\
 	# Load the original argument count.   \n\
 	ld.d	$a1, $sp, 0   \n\
 	# Call _dl_init (struct link_map *main_map, int argc, \
@@ -273,6 +292,8 @@ elf_machine_runtime_setup (struct link_map *l, struct r_scope_elem *scope[],
 #if !defined __loongarch_soft_float
       extern void _dl_runtime_resolve_lasx (void) attribute_hidden;
       extern void _dl_runtime_resolve_lsx (void) attribute_hidden;
+      extern void _dl_runtime_profile_lasx (void) attribute_hidden;
+      extern void _dl_runtime_profile_lsx (void) attribute_hidden;
 #endif
       extern void _dl_runtime_resolve (void) attribute_hidden;
       extern void _dl_runtime_profile (void) attribute_hidden;
@@ -287,7 +308,14 @@ elf_machine_runtime_setup (struct link_map *l, struct r_scope_elem *scope[],
 	 end in this function.  */
       if (profile != 0)
 	{
-	   gotplt[0] = (ElfW(Addr)) &_dl_runtime_profile;
+#if !defined __loongarch_soft_float
+	  if (RTLD_SUPPORT_LASX)
+	    gotplt[0] = (ElfW(Addr)) &_dl_runtime_profile_lasx;
+	  else if (RTLD_SUPPORT_LSX)
+	    gotplt[0] = (ElfW(Addr)) &_dl_runtime_profile_lsx;
+	  else
+#endif
+	    gotplt[0] = (ElfW(Addr)) &_dl_runtime_profile;
 
 	  if (GLRO(dl_profile) != NULL
 	      && _dl_name_match_p (GLRO(dl_profile), l))
@@ -301,9 +329,9 @@ elf_machine_runtime_setup (struct link_map *l, struct r_scope_elem *scope[],
 	     indicated by the offset on the stack, and then jump to
 	     the resolved address.  */
 #if !defined __loongarch_soft_float
-	  if (SUPPORT_LASX)
+	  if (RTLD_SUPPORT_LASX)
 	    gotplt[0] = (ElfW(Addr)) &_dl_runtime_resolve_lasx;
-	  else if (SUPPORT_LSX)
+	  else if (RTLD_SUPPORT_LSX)
 	    gotplt[0] = (ElfW(Addr)) &_dl_runtime_resolve_lsx;
 	  else
 #endif

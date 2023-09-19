@@ -120,6 +120,7 @@ struct gaih_result
 {
   struct gaih_addrtuple *at;
   char *canon;
+  char *h_name;
   bool free_at;
   bool got_ipv6;
 };
@@ -165,6 +166,7 @@ gaih_result_reset (struct gaih_result *res)
   if (res->free_at)
     free (res->at);
   free (res->canon);
+  free (res->h_name);
   memset (res, 0, sizeof (*res));
 }
 
@@ -203,9 +205,8 @@ gaih_inet_serv (const char *servicename, const struct gaih_typeproto *tp,
   return 0;
 }
 
-/* Convert struct hostent to a list of struct gaih_addrtuple objects.  h_name
-   is not copied, and the struct hostent object must not be deallocated
-   prematurely.  The new addresses are appended to the tuple array in RES.  */
+/* Convert struct hostent to a list of struct gaih_addrtuple objects.  The new
+   addresses are appended to the tuple array in RES.  */
 static bool
 convert_hostent_to_gaih_addrtuple (const struct addrinfo *req, int family,
 				   struct hostent *h, struct gaih_result *res)
@@ -238,6 +239,15 @@ convert_hostent_to_gaih_addrtuple (const struct addrinfo *req, int family,
   res->at = array;
   res->free_at = true;
 
+  /* Duplicate h_name because it may get reclaimed when the underlying storage
+     is freed.  */
+  if (res->h_name == NULL)
+    {
+      res->h_name = __strdup (h->h_name);
+      if (res->h_name == NULL)
+	return false;
+    }
+
   /* Update the next pointers on reallocation.  */
   for (size_t i = 0; i < old; i++)
     array[i].next = array + i + 1;
@@ -262,7 +272,6 @@ convert_hostent_to_gaih_addrtuple (const struct addrinfo *req, int family,
 	}
       array[i].next = array + i + 1;
     }
-  array[0].name = h->h_name;
   array[count - 1].next = NULL;
 
   return true;
@@ -324,20 +333,20 @@ gethosts (nss_gethostbyname3_r fct, int family, const char *name,
    memory allocation failure.  The returned string is allocated on the
    heap; the caller has to free it.  */
 static char *
-getcanonname (nss_action_list nip, struct gaih_addrtuple *at, const char *name)
+getcanonname (nss_action_list nip, const char *hname, const char *name)
 {
   nss_getcanonname_r *cfct = __nss_lookup_function (nip, "getcanonname_r");
   char *s = (char *) name;
   if (cfct != NULL)
     {
       char buf[256];
-      if (DL_CALL_FCT (cfct, (at->name ?: name, buf, sizeof (buf),
-			      &s, &errno, &h_errno)) != NSS_STATUS_SUCCESS)
+      if (DL_CALL_FCT (cfct, (hname ?: name, buf, sizeof (buf), &s, &errno,
+			      &h_errno)) != NSS_STATUS_SUCCESS)
 	/* If the canonical name cannot be determined, use the passed
 	   string.  */
 	s = (char *) name;
     }
-  return __strdup (name);
+  return __strdup (s);
 }
 
 /* Process looked up canonical name and if necessary, decode to IDNA.  Result
@@ -771,7 +780,7 @@ get_nss_addresses (const char *name, const struct addrinfo *req,
 		  if ((req->ai_flags & AI_CANONNAME) != 0
 		      && res->canon == NULL)
 		    {
-		      char *canonbuf = getcanonname (nip, res->at, name);
+		      char *canonbuf = getcanonname (nip, res->h_name, name);
 		      if (canonbuf == NULL)
 			{
 			  __resolv_context_put (res_ctx);
@@ -2404,22 +2413,17 @@ getaddrinfo (const char *name, const char *service,
       struct addrinfo *q;
       struct addrinfo *last = NULL;
       char *canonname = NULL;
-      bool malloc_results;
-      size_t alloc_size = nresults * (sizeof (*results) + sizeof (size_t));
+      struct scratch_buffer buf;
+      scratch_buffer_init (&buf);
 
-      malloc_results
-	= !__libc_use_alloca (alloc_size);
-      if (malloc_results)
+      if (!scratch_buffer_set_array_size (&buf, nresults,
+					  sizeof (*results) + sizeof (size_t)))
 	{
-	  results = malloc (alloc_size);
-	  if (results == NULL)
-	    {
-	      __free_in6ai (in6ai);
-	      return EAI_MEMORY;
-	    }
+	  __free_in6ai (in6ai);
+	  return EAI_MEMORY;
 	}
-      else
-	results = alloca (alloc_size);
+      results = buf.data;
+
       order = (size_t *) (results + nresults);
 
       /* Now we definitely need the interface information.  */
@@ -2590,8 +2594,7 @@ getaddrinfo (const char *name, const char *service,
       /* Fill in the canonical name into the new first entry.  */
       p->ai_canonname = canonname;
 
-      if (malloc_results)
-	free (results);
+      scratch_buffer_free (&buf);
     }
 
   __free_in6ai (in6ai);
