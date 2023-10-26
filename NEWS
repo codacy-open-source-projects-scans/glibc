@@ -31,9 +31,18 @@ Major new features:
   the process ID associated with the process file descriptor created by
   pid_spawn, fork_np, or pidfd_open.
 
+* scanf-family functions now support the wN format length modifiers for
+  arguments pointing to types intN_t, int_leastN_t, uintN_t or
+  uint_leastN_t (for example, %w32d to read int32_t or int_least32_t in
+  decimal, or %w32x to read uint32_t or uint_least32_t in hexadecimal)
+  and the wfN format length modifiers for arguments pointing to types
+  int_fastN_t or uint_fastN_t, as specified in draft ISO C2X.
+
 Deprecated and removed features, and other changes affecting compatibility:
 
-  [Add deprecations, removals and changes affecting compatibility here]
+* The ldconfig program now skips file names containing ';' or ending in
+  ".tmp", to avoid examining temporary files created by the RPM and dpkg
+  package managers.
 
 Changes to build and runtime requirements:
 
@@ -47,6 +56,20 @@ Security related changes:
   family, and a DNS response is received over TCP that is larger than
   2048 bytes, getaddrinfo may potentially disclose stack contents via
   the returned address data, or crash.
+
+  CVE-2023-4806: When an NSS plugin only implements the
+  _gethostbyname2_r and _getcanonname_r callbacks, getaddrinfo could use
+  memory that was freed during buffer resizing, potentially causing a
+  crash or read or write to arbitrary memory.
+
+  CVE-2023-5156: The fix for CVE-2023-4806 introduced a memory leak when
+  an application calls getaddrinfo for AF_INET6 with AI_CANONNAME,
+  AI_ALL and AI_V4MAPPED flags set.
+
+  CVE-2023-4911: If a tunable of the form NAME=NAME=VAL is passed in the
+  environment of a setuid program and NAME is valid, it may result in a
+  buffer overflow, which could be exploited to achieve escalated
+  privileges.  This flaw was introduced in glibc 2.34.
 
 The following bugs are resolved with this release:
 

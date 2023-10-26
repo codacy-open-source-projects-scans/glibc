@@ -198,7 +198,9 @@ tests := \
   tst-strerror-fail \
   tst-strfry \
   tst-strlcat \
+  tst-strlcat2 \
   tst-strlcpy \
+  tst-strlcpy2 \
   tst-strlen \
   tst-strtok \
   tst-strtok_r \

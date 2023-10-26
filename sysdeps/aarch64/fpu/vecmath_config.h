@@ -42,10 +42,35 @@ extern const struct v_log_data
   /* Shared data for vector log and log-derived routines (e.g. asinh).  */
   double poly[V_LOG_POLY_ORDER - 1];
   double ln2;
-  double invc[1 << V_LOG_TABLE_BITS];
-  double logc[1 << V_LOG_TABLE_BITS];
+  struct
+  {
+    double invc, logc;
+  } table[1 << V_LOG_TABLE_BITS];
 } __v_log_data attribute_hidden;
 
 #define V_EXP_TABLE_BITS 7
 extern const uint64_t __v_exp_data[1 << V_EXP_TABLE_BITS] attribute_hidden;
+
+#define V_LOG2_TABLE_BITS 7
+extern const struct v_log2_data
+{
+  double poly[5];
+  double invln2;
+  struct
+  {
+    double invc, log2c;
+  } table[1 << V_LOG2_TABLE_BITS];
+} __v_log2_data attribute_hidden;
+
+#define V_LOG10_TABLE_BITS 7
+extern const struct v_log10_data
+{
+  double poly[5];
+  double invln10, log10_2;
+  struct
+  {
+    double invc, log10c;
+  } table[1 << V_LOG10_TABLE_BITS];
+} __v_log10_data attribute_hidden;
+
 #endif

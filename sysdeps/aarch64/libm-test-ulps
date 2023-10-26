@@ -970,10 +970,18 @@ double: 2
 float: 1
 ldouble: 2
 
+Function: "exp10_advsimd":
+double: 1
+float: 2
+
 Function: "exp10_downward":
 double: 2
 float: 1
 ldouble: 3
+
+Function: "exp10_sve":
+double: 1
+float: 1
 
 Function: "exp10_towardzero":
 double: 2
@@ -990,10 +998,18 @@ double: 1
 float: 1
 ldouble: 1
 
+Function: "exp2_advsimd":
+double: 1
+float: 1
+
 Function: "exp2_downward":
 double: 1
 float: 1
 ldouble: 1
+
+Function: "exp2_sve":
+double: 1
+float: 1
 
 Function: "exp2_towardzero":
 double: 1
@@ -1172,10 +1188,18 @@ double: 2
 float: 2
 ldouble: 2
 
+Function: "log10_advsimd":
+double: 1
+float: 2
+
 Function: "log10_downward":
 double: 2
 float: 3
 ldouble: 1
+
+Function: "log10_sve":
+double: 1
+float: 2
 
 Function: "log10_towardzero":
 double: 2
@@ -1212,10 +1236,18 @@ double: 1
 float: 1
 ldouble: 3
 
+Function: "log2_advsimd":
+double: 1
+float: 2
+
 Function: "log2_downward":
 double: 3
 float: 3
 ldouble: 3
+
+Function: "log2_sve":
+double: 1
+float: 2
 
 Function: "log2_towardzero":
 double: 2
@@ -1340,10 +1372,18 @@ Function: "tan":
 float: 1
 ldouble: 1
 
+Function: "tan_advsimd":
+double: 2
+float: 2
+
 Function: "tan_downward":
 double: 1
 float: 2
 ldouble: 1
+
+Function: "tan_sve":
+double: 2
+float: 2
 
 Function: "tan_towardzero":
 double: 1

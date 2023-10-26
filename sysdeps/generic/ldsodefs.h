@@ -1037,10 +1037,6 @@ extern int _dl_check_map_versions (struct link_map *map, int verbose,
 extern void _dl_init (struct link_map *main_map, int argc, char **argv,
 		      char **env) attribute_hidden;
 
-/* List of ELF objects in reverse order of their constructor
-   invocation.  */
-extern struct link_map *_dl_init_called_list attribute_hidden;
-
 /* Call the finalizer functions of all shared objects whose
    initializer functions have completed.  */
 extern void _dl_fini (void) attribute_hidden;
@@ -1383,7 +1379,14 @@ void DL_ARCH_FIXUP_ATTRIBUTE _dl_audit_pltexit (struct link_map *l,
 						const void *inregs,
 						void *outregs)
   attribute_hidden;
-#endif /* SHARED */
+
+#else  /* !SHARED */
+static inline void
+_dl_audit_objclose (struct link_map *l)
+{
+  /* No audit implementation for !SHARED.  */
+}
+#endif /* !SHARED */
 
 #if PTHREAD_IN_LIBC && defined SHARED
 /* Recursive locking implementation for use within the dynamic loader.
