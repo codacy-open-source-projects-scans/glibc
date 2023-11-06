@@ -96,7 +96,6 @@ routines := \
   mbtowc \
   mrand48 \
   mrand48_r \
-  msort \
   nrand48 \
   nrand48_r \
   old_atexit  \
@@ -215,6 +214,7 @@ tests := \
   tst-on_exit \
   tst-qsort \
   tst-qsort2 \
+  tst-qsort3 \
   tst-quick_exit \
   tst-rand48 \
   tst-rand48-2 \
@@ -380,7 +380,6 @@ generated += \
   # generated
 
 CFLAGS-bsearch.c += $(uses-callbacks)
-CFLAGS-msort.c += $(uses-callbacks)
 CFLAGS-qsort.c += $(uses-callbacks)
 CFLAGS-system.c += -fexceptions
 CFLAGS-system.os = -fomit-frame-pointer

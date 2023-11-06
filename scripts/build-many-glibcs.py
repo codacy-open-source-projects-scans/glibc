@@ -451,9 +451,7 @@ class Context(object):
                                       {'variant': 'disable-multi-arch',
                                        'arch': 'sparcv9',
                                        'ccopts': '-m32 -mlong-double-128 -mcpu=v9',
-                                       'cfg': ['--disable-multi-arch']},
-                                      {'variant': 'enable-crypt',
-                                       'cfg': ['--enable-crypt']}])
+                                       'cfg': ['--disable-multi-arch']}])
         self.add_config(arch='x86_64',
                         os_name='linux-gnu',
                         gcc_cfg=['--with-multilib-list=m64,m32,mx32'],
@@ -467,7 +465,6 @@ class Context(object):
                                                '--disable-profile',
                                                '--disable-timezone-tools',
                                                '--disable-mathvec',
-                                               '--disable-crypt',
                                                '--disable-build-nscd',
                                                '--disable-nscd']},
                                       {'variant': 'no-pie',
@@ -488,9 +485,7 @@ class Context(object):
                                       {'arch': 'i586',
                                        'ccopts': '-m32 -march=i586'},
                                       {'variant': 'enable-fortify-source',
-                                       'cfg': ['--enable-fortify-source']},
-                                      {'variant': 'enable-crypt',
-                                       'cfg': ['--enable-crypt']}])
+                                       'cfg': ['--enable-fortify-source']}])
         self.add_config(arch='x86_64',
                         os_name='gnu',
                         gcc_cfg=['--disable-multilib'])
@@ -824,7 +819,7 @@ class Context(object):
                             'gcc': 'vcs-13',
                             'glibc': 'vcs-mainline',
                             'gmp': '6.3.0',
-                            'linux': '6.5',
+                            'linux': '6.6',
                             'mpc': '1.3.1',
                             'mpfr': '4.2.1',
                             'mig': 'vcs-mainline',
@@ -1943,7 +1938,7 @@ def check_for_required_tools():
     get_list_of_required_tools()
     count_old_tools = 0
     count_missing_tools = 0
-    
+
     for k, v in REQUIRED_TOOLS.items():
         version = v[0](k)
         if version == 'missing':
@@ -1962,10 +1957,10 @@ def check_for_required_tools():
             count_missing_tools = count_missing_tools + 1
             print('{:9}: {:3} (required=\"{}\")'.format(k, ok,
                     version_str(v[1])))
-    
+
     if count_old_tools > 0 or count_missing_tools > 0:
         exit (1);
-    
+
 def main(argv):
     """The main entry point."""
     check_for_required_tools();
