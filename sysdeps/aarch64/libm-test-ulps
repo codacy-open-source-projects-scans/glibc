@@ -6,10 +6,18 @@ double: 1
 float: 1
 ldouble: 1
 
+Function: "acos_advsimd":
+double: 1
+float: 1
+
 Function: "acos_downward":
 double: 1
 float: 1
 ldouble: 1
+
+Function: "acos_sve":
+double: 1
+float: 1
 
 Function: "acos_towardzero":
 double: 1
@@ -46,10 +54,18 @@ double: 1
 float: 1
 ldouble: 1
 
+Function: "asin_advsimd":
+double: 2
+float: 2
+
 Function: "asin_downward":
 double: 1
 float: 1
 ldouble: 2
+
+Function: "asin_sve":
+double: 2
+float: 2
 
 Function: "asin_towardzero":
 double: 1
@@ -90,10 +106,18 @@ Function: "atan2":
 float: 1
 ldouble: 2
 
+Function: "atan2_advsimd":
+double: 1
+float: 2
+
 Function: "atan2_downward":
 double: 1
 float: 2
 ldouble: 2
+
+Function: "atan2_sve":
+double: 1
+float: 2
 
 Function: "atan2_towardzero":
 double: 1
@@ -105,10 +129,18 @@ double: 1
 float: 1
 ldouble: 2
 
+Function: "atan_advsimd":
+double: 1
+float: 1
+
 Function: "atan_downward":
 double: 1
 float: 2
 ldouble: 2
+
+Function: "atan_sve":
+double: 1
+float: 1
 
 Function: "atan_towardzero":
 double: 1
@@ -1216,10 +1248,18 @@ double: 1
 float: 1
 ldouble: 3
 
+Function: "log1p_advsimd":
+double: 1
+float: 1
+
 Function: "log1p_downward":
 double: 1
 float: 2
 ldouble: 3
+
+Function: "log1p_sve":
+double: 1
+float: 1
 
 Function: "log1p_towardzero":
 double: 2

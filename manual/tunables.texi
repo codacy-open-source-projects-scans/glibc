@@ -532,7 +532,7 @@ This tunable is specific to powerpc, powerpc64 and powerpc64le.
 @deftp Tunable glibc.cpu.name
 The @code{glibc.cpu.name=xxx} tunable allows the user to tell @theglibc{} to
 assume that the CPU is @code{xxx} where xxx may have one of these values:
-@code{generic}, @code{falkor}, @code{thunderxt88}, @code{thunderx2t99},
+@code{generic}, @code{thunderxt88}, @code{thunderx2t99},
 @code{thunderx2t99p1}, @code{ares}, @code{emag}, @code{kunpeng},
 @code{a64fx}.
 
@@ -651,6 +651,23 @@ Other bits are currently reserved.
 support in the kernel if this tunable has any non-zero value.
 
 The default value is @samp{0}, which disables all memory tagging.
+@end deftp
+
+@deftp Tunable glibc.mem.decorate_maps
+If the kernel supports naming anonymous virtual memory areas (since
+Linux version 5.17, although not always enabled by some kernel
+configurations), this tunable can be used to control whether
+@theglibc{} decorates the underlying memory obtained from operating
+system with a string describing its usage (for instance, on the thread
+stack created by @code{ptthread_create} or memory allocated by
+@code{malloc}).
+
+The process mappings can be obtained by reading the @code{/proc/<pid>maps}
+(with @code{pid} being either the @dfn{process ID} or @code{self} for the
+process own mapping).
+
+This tunable takes a value of 0 and 1, where 1 enables the feature.
+The default value is @samp{0}, which disables the decoration.
 @end deftp
 
 @node gmon Tunables

@@ -1,9 +1,14 @@
-libmvec-supported-funcs = cos \
+libmvec-supported-funcs = acos \
+                          asin \
+                          atan \
+                          atan2 \
+                          cos \
                           exp \
                           exp10 \
                           exp2 \
                           log \
                           log10 \
+                          log1p \
                           log2 \
                           sin \
                           tan

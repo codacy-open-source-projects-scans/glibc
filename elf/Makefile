@@ -303,6 +303,7 @@ tests := \
   tst-array4 \
   tst-array5 \
   tst-auxv \
+  tst-decorate-maps \
   tst-dl-hash \
   tst-leaks1 \
   tst-stringtable \
@@ -2941,7 +2942,7 @@ $(objpfx)tst-tls-allocation-failure-static-patched: \
 
 $(objpfx)tst-tls-allocation-failure-static-patched.out: \
   $(objpfx)tst-tls-allocation-failure-static-patched
-	$< > $@ 2>&1; echo "status: $$?" >> $@
+	$(test-wrapper) $< > $@ 2>&1; echo "status: $$?" >> $@
 	grep -q '^Fatal glibc error: Cannot allocate TLS block$$' $@ \
 	  && grep -q '^status: 127$$' $@; \
 	  $(evaluate-test)
@@ -2980,3 +2981,9 @@ LDFLAGS-tst-dlclose-lazy-mod1.so = -Wl,-z,lazy,--no-as-needed
 $(objpfx)tst-dlclose-lazy-mod1.so: $(objpfx)tst-dlclose-lazy-mod2.so
 $(objpfx)tst-dlclose-lazy.out: \
   $(objpfx)tst-dlclose-lazy-mod1.so $(objpfx)tst-dlclose-lazy-mod2.so
+
+$(objpfx)tst-decorate-maps: $(shared-thread-library)
+
+tst-decorate-maps-ENV = \
+  GLIBC_TUNABLES=glibc.malloc.arena_max=8:glibc.malloc.mmap_threshold=1024:glibc.mem.decorate_maps=1
+tst-decorate-maps-ARGS = 8
