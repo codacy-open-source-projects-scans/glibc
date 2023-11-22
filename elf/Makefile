@@ -37,12 +37,12 @@ routines = \
   dl-iteratephdr \
   dl-libc \
   dl-origin \
-  dl-profstub \
   dl-reloc-static-pie \
   dl-support \
   dl-sym \
   dl-sysdep \
   enbl-secure \
+  libc-dl-profstub  \
   libc-dl_find_object \
   libc_early_init \
   rtld_static_init \
@@ -72,7 +72,6 @@ dl-routines = \
   dl-open \
   dl-origin \
   dl-printf \
-  dl-profile \
   dl-reloc \
   dl-runtime \
   dl-scope \
@@ -117,7 +116,11 @@ elide-routines.os = \
   # elide-routines.os
 
 # These object files are only included in the dynamically-linked libc.
-shared-only-routines = libc-dl_find_object
+shared-only-routines = \
+  libc-dl-profile \
+  libc-dl-profstub \
+  libc-dl_find_object \
+  # shared-only-routines
 
 # ld.so uses those routines, plus some special stuff for being the program
 # interpreter and operating independent of libc.
@@ -135,6 +138,7 @@ rtld-routines = \
   dl-libc_freeres \
   dl-minimal \
   dl-mutex \
+  dl-profile \
   dl-sysdep \
   dl-usage \
   rtld \
@@ -262,8 +266,7 @@ tests-static-normal := \
   tst-array5-static \
   tst-dl-iter-static \
   tst-dst-static \
-  tst-env-setuid \
-  tst-env-setuid-tunables \
+  tst-env-setuid-static \
   tst-getauxval-static \
   tst-linkall-static \
   tst-single_threaded-pthread-static \
@@ -276,10 +279,12 @@ tests-static-normal := \
 tests-static-internal := \
   tst-dl-printf-static \
   tst-dl_find_object-static \
+  tst-env-setuid-tunables \
   tst-ptrguard1-static \
   tst-stackguard1-static \
   tst-tls1-static \
   tst-tls1-static-non-pie \
+  tst-tunables \
   # tests-static-internal
 
 CRT-tst-tls1-static-non-pie := $(csu-objpfx)crt1.o
@@ -305,6 +310,7 @@ tests := \
   tst-auxv \
   tst-decorate-maps \
   tst-dl-hash \
+  tst-env-setuid \
   tst-leaks1 \
   tst-stringtable \
   tst-tls9 \
@@ -428,6 +434,7 @@ tests += \
   tst-nodelete-opened \
   tst-nodelete2 \
   tst-noload \
+  tst-non-directory-path \
   tst-null-argv \
   tst-p_align1 \
   tst-p_align2 \
@@ -856,6 +863,7 @@ modules-names += \
   tst-nodelete-dlclose-plugin \
   tst-nodelete-opened-lib \
   tst-nodelete2mod \
+  tst-non-directory-mod \
   tst-null-argv-lib \
   tst-p_alignmod-base \
   tst-p_alignmod3 \
@@ -1122,6 +1130,7 @@ ifeq (yes,$(build-shared))
 ifeq ($(run-built-tests),yes)
 tests-special += \
   $(objpfx)argv0test.out \
+  $(objpfx)tst-non-directory-path.out \
   $(objpfx)tst-pathopt.out \
   $(objpfx)tst-rtld-help.out \
   $(objpfx)tst-rtld-list-diagnostics.out \
@@ -2429,9 +2438,6 @@ $(objpfx)tst-nodelete-dlclose: $(objpfx)tst-nodelete-dlclose-dso.so
 $(objpfx)tst-nodelete-dlclose.out: $(objpfx)tst-nodelete-dlclose-dso.so \
 				   $(objpfx)tst-nodelete-dlclose-plugin.so
 
-tst-env-setuid-ENV = MALLOC_CHECK_=2 MALLOC_MMAP_THRESHOLD_=4096 \
-		     LD_HWCAP_MASK=0x1
-
 $(objpfx)tst-debug1.out: $(objpfx)tst-debug1mod1.so
 
 $(objpfx)tst-debug1mod1.so: $(objpfx)testobj1.so
@@ -2658,6 +2664,8 @@ $(objpfx)tst-glibc-hwcaps-mask.out: \
 # Generic dependency for sysdeps implementation of
 # tst-glibc-hwcaps-cache.
 $(objpfx)tst-glibc-hwcaps-cache.out: $(objpfx)tst-glibc-hwcaps
+
+tst-tunables-ARGS = -- $(host-test-program-cmd)
 
 $(objpfx)list-tunables.out: tst-rtld-list-tunables.sh $(objpfx)ld.so
 	$(SHELL) $< $(objpfx)ld.so '$(test-wrapper-env)' \
@@ -2987,3 +2995,17 @@ $(objpfx)tst-decorate-maps: $(shared-thread-library)
 tst-decorate-maps-ENV = \
   GLIBC_TUNABLES=glibc.malloc.arena_max=8:glibc.malloc.mmap_threshold=1024:glibc.mem.decorate_maps=1
 tst-decorate-maps-ARGS = 8
+
+LDFLAGS-tst-non-directory-mod.so = -Wl,-soname,tst-non-directory-mod.so
+$(objpfx)tst-non-directory-path: $(objpfx)tst-non-directory-mod.so
+$(objpfx)tst-non-directory-path.out: tst-non-directory-path.sh \
+	$(objpfx)tst-non-directory-path
+	$(SHELL) tst-non-directory-path.sh $(objpfx)ld.so $(objpfx)tst-non-directory-path \
+		    '$(test-wrapper-env)' '$(run_program_env)' \
+		    '$(rpath-link)' $(objpfx) > $@; \
+	$(evaluate-test)
+
+tst-env-setuid-ARGS = -- $(host-test-program-cmd)
+
+# Reuse a module with a SONAME, to specific as the LD_PROFILE.
+$(objpfx)tst-env-setuid: $(objpfx)tst-sonamemove-runmod2.so

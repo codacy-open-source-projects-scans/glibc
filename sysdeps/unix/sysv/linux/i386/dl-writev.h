@@ -1,5 +1,5 @@
-/* Set default memcmp impl based on ISA level.
-   Copyright (C) 2022-2023 Free Software Foundation, Inc.
+/* Message-writing for the dynamic linker.  Linux/i386 version.
+   Copyright (C) 2013-2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,13 +16,9 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <isa-level.h>
-#if MINIMUM_X86_ISA_LEVEL == 1 || MINIMUM_X86_ISA_LEVEL == 2
-# define DEFAULT_MEMCMP	__memcmp_sse2
-#elif MINIMUM_X86_ISA_LEVEL == 3
-# define DEFAULT_MEMCMP	__memcmp_avx2_movbe
-#elif MINIMUM_X86_ISA_LEVEL == 4
-# define DEFAULT_MEMCMP	__memcmp_evex_movbe
-#else
-# error "Unknown default memcmp implementation"
+#if BUILD_PIE_DEFAULT
+/* Can't use "call *%gs:SYSINFO_OFFSET" during startup in static PIE.  */
+# define I386_USE_SYSENTER 0
 #endif
+
+#include <sysdeps/unix/sysv/linux/dl-writev.h>

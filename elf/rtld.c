@@ -300,7 +300,6 @@ dl_main_state_init (struct dl_main_state *state)
   state->glibc_hwcaps_prepend = NULL;
   state->glibc_hwcaps_mask = NULL;
   state->mode = rtld_mode_normal;
-  state->any_debug = false;
   state->version_info = false;
 }
 
@@ -361,6 +360,7 @@ struct rtld_global_ro _rtld_global_ro attribute_relro =
     ._dl_fpu_control = _FPU_DEFAULT,
     ._dl_pagesize = EXEC_PAGESIZE,
     ._dl_inhibit_cache = 0,
+    ._dl_profile_output = "/var/tmp",
 
     /* Function pointers.  */
     ._dl_debug_printf = _dl_debug_printf,
@@ -2480,7 +2480,6 @@ process_dl_debug (struct dl_main_state *state, const char *dl_debug)
 		&& memcmp (dl_debug, debopts[cnt].name, len) == 0)
 	      {
 		GLRO(dl_debug_mask) |= debopts[cnt].mask;
-		state->any_debug = true;
 		break;
 	      }
 
@@ -2534,10 +2533,6 @@ process_envvars (struct dl_main_state *state)
   char *envline;
   char *debug_output = NULL;
 
-  /* This is the default place for profiling data file.  */
-  GLRO(dl_profile_output)
-    = &"/var/tmp\0/var/profile"[__libc_enable_secure ? 9 : 0];
-
   while ((envline = _dl_next_ld_env_entry (&runp)) != NULL)
     {
       size_t len = 0;
@@ -2566,6 +2561,10 @@ process_envvars (struct dl_main_state *state)
 	      process_dl_debug (state, &envline[6]);
 	      break;
 	    }
+	  /* For __libc_enable_secure mode, audit pathnames containing slashes
+	     are ignored.  Also, shared audit objects are only loaded only from
+	     the standard search directories and only if they have set-user-ID
+	     mode bit enabled.  */
 	  if (memcmp (envline, "AUDIT", 5) == 0)
 	    audit_list_add_string (&state->audit_list, &envline[6]);
 	  break;
@@ -2578,7 +2577,10 @@ process_envvars (struct dl_main_state *state)
 	      break;
 	    }
 
-	  /* List of objects to be preloaded.  */
+	  /* For __libc_enable_secure mode, preload pathnames containing slashes
+	     are ignored.  Also, shared objects are only preloaded from the
+	     standard search directories and only if they have set-user-ID mode
+	     bit enabled.  */
 	  if (memcmp (envline, "PRELOAD", 7) == 0)
 	    {
 	      state->preloadlist = &envline[8];
@@ -2586,7 +2588,8 @@ process_envvars (struct dl_main_state *state)
 	    }
 
 	  /* Which shared object shall be profiled.  */
-	  if (memcmp (envline, "PROFILE", 7) == 0 && envline[8] != '\0')
+	  if (!__libc_enable_secure
+	      && memcmp (envline, "PROFILE", 7) == 0 && envline[8] != '\0')
 	    GLRO(dl_profile) = &envline[8];
 	  break;
 
@@ -2670,8 +2673,7 @@ process_envvars (struct dl_main_state *state)
 	}
       while (*nextp != '\0');
 
-      if (__access ("/etc/suid-debug", F_OK) != 0)
-	GLRO(dl_debug_mask) = 0;
+      GLRO(dl_debug_mask) = 0;
 
       if (state->mode != rtld_mode_normal)
 	_exit (5);
@@ -2679,7 +2681,7 @@ process_envvars (struct dl_main_state *state)
   /* If we have to run the dynamic linker in debugging mode and the
      LD_DEBUG_OUTPUT environment variable is given, we write the debug
      messages to this file.  */
-  else if (state->any_debug && debug_output != NULL)
+  else if (GLRO(dl_debug_mask) != 0 && debug_output != NULL)
     {
       const int flags = O_WRONLY | O_APPEND | O_CREAT | O_NOFOLLOW;
       size_t name_len = strlen (debug_output);
