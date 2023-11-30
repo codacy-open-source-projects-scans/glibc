@@ -1,4 +1,5 @@
-/* Copyright (C) 1991-2023 Free Software Foundation, Inc.
+/* Test module with no libc.so dependency and string function references.
+   Copyright (C) 2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,24 +16,10 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <errno.h>
-#include <stddef.h>
-#include <unistd.h>
+#include <string.h>
 
-/* Test for access to FILE.  */
-int
-__access (const char *file, int type)
-{
-  if (file == NULL || (type & ~(R_OK|W_OK|X_OK|F_OK)) != 0)
-    {
-      __set_errno (EINVAL);
-      return -1;
-    }
-
-  __set_errno (ENOSYS);
-  return -1;
-}
-libc_hidden_def (__access)
-stub_warning (access)
-
-weak_alias (__access, access)
+/* Some references to libc symbols which are likely to have IFUNC
+   resolvers.  If they do not, this module does not exercise bug 31083.  */
+void *memcpy_pointer = memcpy;
+void *memmove_pointer = memmove;
+void *memset_pointer = memset;

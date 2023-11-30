@@ -1,5 +1,5 @@
-/* Syscall wrapper that do not set errno.  Generic version.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+/* Test dlmopen with implicit libc.so dependency (bug 31083).
+   Copyright (C) 2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,6 +16,14 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-/* The __access_noerrno stub mustn't be hidden in ld.so on Hurd since it needs
-   to be preempted by __access_noerrno from libc.so after bootstrap.  */
-extern __typeof (__access) __access_noerrno;
+#include <support/xdlfcn.h>
+
+static int
+do_test (void)
+{
+  void *handle = xdlmopen (LM_ID_NEWLM, "tst-nodeps2-mod.so", RTLD_NOW);
+  xdlclose (handle);
+  return 0;
+}
+
+#include <support/test-driver.c>

@@ -312,10 +312,17 @@ ptmalloc_init (void)
 # endif
   TUNABLE_GET (mxfast, size_t, TUNABLE_CALLBACK (set_mxfast));
   TUNABLE_GET (hugetlb, size_t, TUNABLE_CALLBACK (set_hugetlb));
+
   if (mp_.hp_pagesize > 0)
-    /* Force mmap for main arena instead of sbrk, so hugepages are explicitly
-       used.  */
-    __always_fail_morecore = true;
+    {
+      /* Force mmap for main arena instead of sbrk, so MAP_HUGETLB is always
+         tried.  Also tune the mmap threshold, so allocation smaller than the
+	 large page will also try to use large pages by falling back
+	 to sysmalloc_mmap_fallback on sysmalloc.  */
+      if (!TUNABLE_IS_INITIALIZED (mmap_threshold))
+	do_set_mmap_threshold (mp_.hp_pagesize);
+      __always_fail_morecore = true;
+    }
 }
 
 /* Managing heaps and arenas (for concurrent threads) */
@@ -824,7 +831,7 @@ arena_get2 (size_t size, mstate avoid_arena)
             narenas_limit = mp_.arena_max;
           else if (narenas > mp_.arena_test)
             {
-              int n = __get_nprocs_sched ();
+              int n = __get_nprocs ();
 
               if (n >= 1)
                 narenas_limit = NARENAS_FROM_NCORES (n);
