@@ -7,6 +7,8 @@
   "GLIBC_TUNABLES\0"							      \
   "HOSTALIASES\0"							      \
   "LD_AUDIT\0"								      \
+  "LD_BIND_NOT\0"							      \
+  "LD_BIND_NOW\0"							      \
   "LD_DEBUG\0"								      \
   "LD_DEBUG_OUTPUT\0"							      \
   "LD_DYNAMIC_WEAK\0"							      \
@@ -16,6 +18,8 @@
   "LD_PRELOAD\0"							      \
   "LD_PROFILE\0"							      \
   "LD_SHOW_AUXV\0"							      \
+  "LD_VERBOSE\0"							      \
+  "LD_WARN\0"								      \
   "LOCALDOMAIN\0"							      \
   "LOCPATH\0"								      \
   "MALLOC_ARENA_MAX\0"							      \

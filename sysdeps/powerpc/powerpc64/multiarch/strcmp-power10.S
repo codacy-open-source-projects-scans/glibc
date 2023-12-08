@@ -1,7 +1,5 @@
-/* rawmemchr - find a character in a memory zone
-
-   Copyright (C) 2015-2023 Free Software Foundation, Inc.
-
+/* Optimized strcmp implementation for POWER10/PPC64.
+   Copyright (C) 2021-2023 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,28 +13,14 @@
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library.  If not, see
+   License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <sysdep.h>
+#if defined __LITTLE_ENDIAN__ && IS_IN (libc)
+#define STRCMP __strcmp_power10
 
-/* Special case rawmemchr (s, 0) as strlen, otherwise tailcall memchr.
-   Call strlen without setting up a full frame - it preserves x14/x15.
-*/
+#undef libc_hidden_builtin_def
+#define libc_hidden_builtin_def(name)
 
-ENTRY (__rawmemchr)
-	cbz	w1, L(do_strlen)
-	mov	x2, -1
-	b	__memchr
-
-L(do_strlen):
-	mov	x15, x30
-	cfi_register (x30, x15)
-	mov	x14, x0
-	bl	__strlen
-	add	x0, x14, x0
-	ret	x15
-
-END (__rawmemchr)
-weak_alias (__rawmemchr, rawmemchr)
-libc_hidden_builtin_def (__rawmemchr)
+#include <sysdeps/powerpc/powerpc64/le/power10/strcmp.S>
+#endif /* __LITTLE_ENDIAN__ && IS_IN (libc) */
