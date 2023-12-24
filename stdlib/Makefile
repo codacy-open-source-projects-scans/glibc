@@ -234,6 +234,8 @@ tests := \
   tst-setcontext7 \
   tst-setcontext8 \
   tst-setcontext9 \
+  tst-setcontext10 \
+  tst-setcontext11 \
   tst-strfmon_l \
   tst-strfrom \
   tst-strfrom-locale \
