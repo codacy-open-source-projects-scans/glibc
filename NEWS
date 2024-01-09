@@ -1,5 +1,5 @@
 GNU C Library NEWS -- history of user-visible changes.
-Copyright (C) 1992-2023 Free Software Foundation, Inc.
+Copyright (C) 1992-2024 Free Software Foundation, Inc.
 See the end for copying conditions.
 
 Please send GNU C library bug reports via <https://sourceware.org/bugzilla/>
@@ -8,6 +8,9 @@ using `glibc' in the "product" field.
 Version 2.39
 
 Major new features:
+
+* Sync with Linux kernel 6.6 shadow stack interface.  Since only x86-64
+  is supported, --enable-cet is ignored for i386.
 
 * struct statvfs now has an f_type member, equal to the f_type statfs member;
   on the Hurd this was always available under a reserved name,
@@ -43,6 +46,15 @@ Major new features:
   on thread stack created by pthread_create or memory allocated by
   malloc).
 
+* The <stdbit.h> header has been added from ISO C2X, with
+  stdc_leading_zeros, stdc_leading_ones, stdc_trailing_zeros,
+  stdc_trailing_ones, stdc_first_leading_zero, stdc_first_leading_one,
+  stdc_first_trailing_zero, stdc_first_trailing_one, stdc_count_zeros,
+  stdc_count_ones, stdc_has_single_bit, stdc_bit_width, stdc_bit_floor
+  and stdc_bit_ceil function families, each having functions for
+  unsigned char, unsigned short, unsigned int, unsigned long int and
+  unsigned long long int, and a type-generic macro.
+
 Deprecated and removed features, and other changes affecting compatibility:
 
 * The ldconfig program now skips file names containing ';' or ending in
@@ -67,6 +79,8 @@ Deprecated and removed features, and other changes affecting compatibility:
   confused with Name Service Switch).  Distributors of binary packages
   of GNU libc are advised to check whether their build processes can be
   simplified.
+
+* The ia64*-*-linux-gnu configurations are no longer supported.
 
 Changes to build and runtime requirements:
 

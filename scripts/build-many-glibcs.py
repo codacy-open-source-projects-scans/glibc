@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # Build many configurations of glibc.
-# Copyright (C) 2016-2023 Free Software Foundation, Inc.
+# Copyright (C) 2016-2024 Free Software Foundation, Inc.
 # Copyright The GNU Toolchain Authors.
 # This file is part of the GNU C Library.
 #
@@ -234,10 +234,6 @@ class Context(object):
                         os_name='linux-gnu')
         self.add_config(arch='i686',
                         os_name='gnu')
-        self.add_config(arch='ia64',
-                        os_name='linux-gnu',
-                        first_gcc_cfg=['--with-system-libunwind'],
-                        binutils_cfg=['--enable-obsolete'])
         self.add_config(arch='loongarch64',
                         os_name='linux-gnu',
                         variant='lp64d',
@@ -1300,7 +1296,6 @@ def install_linux_headers(policy, cmdlist):
                 'i586': 'x86',
                 'i686': 'x86',
                 'i786': 'x86',
-                'ia64': 'ia64',
                 'loongarch64': 'loongarch',
                 'm68k': 'm68k',
                 'microblaze': 'microblaze',

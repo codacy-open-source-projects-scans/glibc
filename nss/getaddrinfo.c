@@ -1,5 +1,5 @@
 /* Host and service name lookups using Name Service Switch modules.
-   Copyright (C) 1996-2023 Free Software Foundation, Inc.
+   Copyright (C) 1996-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -615,7 +615,14 @@ get_nss_addresses (const char *name, const struct addrinfo *req,
      function variant.  */
   res_ctx = __resolv_context_get ();
   if (res_ctx == NULL)
-    no_more = 1;
+    {
+      if (errno == ENOMEM)
+	{
+	  result = -EAI_MEMORY;
+	  goto out;
+	}
+      no_more = 1;
+    }
 
   while (!no_more)
     {

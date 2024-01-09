@@ -1,6 +1,6 @@
 /* Constants and data structures for x86 CPU features.
    This file is part of the GNU C Library.
-   Copyright (C) 2008-2023 Free Software Foundation, Inc.
+   Copyright (C) 2008-2024 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -336,4 +336,12 @@ enum
   x86_cpu_AVX10_XMM = x86_cpu_index_24_ecx_0_ebx + 16,
   x86_cpu_AVX10_YMM = x86_cpu_index_24_ecx_0_ebx + 17,
   x86_cpu_AVX10_ZMM = x86_cpu_index_24_ecx_0_ebx + 18,
+};
+
+/* Bits in the feature_1 field in TCB.  */
+
+enum
+{
+  x86_feature_1_ibt		= 1U << 0,
+  x86_feature_1_shstk		= 1U << 1
 };

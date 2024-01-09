@@ -1,5 +1,5 @@
 /* Get file status.  Linux version.
-   Copyright (C) 2020-2023 Free Software Foundation, Inc.
+   Copyright (C) 2020-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -86,7 +86,7 @@ fstatat64_time64_stat (int fd, const char *file, struct __stat64_t64 *buf,
 
 #if XSTAT_IS_XSTAT64
 # ifdef __NR_newfstatat
-  /* 64-bit kABI, e.g. aarch64, ia64, powerpc64*, s390x, riscv64, and
+  /* 64-bit kABI, e.g. aarch64, powerpc64*, s390x, riscv64, and
      x86_64.  */
   r = INTERNAL_SYSCALL_CALL (newfstatat, fd, file, buf, flag);
 # elif defined __NR_fstatat64

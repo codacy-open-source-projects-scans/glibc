@@ -1,5 +1,5 @@
 /* Operating system support for run-time dynamic linker.  Hurd version.
-   Copyright (C) 1995-2023 Free Software Foundation, Inc.
+   Copyright (C) 1995-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -32,7 +32,6 @@
 #include <sysdep.h>
 #include <argz.h>
 #include <mach/mig_support.h>
-#include <mach/machine/vm_param.h>
 #include "hurdstartup.h"
 #include <hurd/lookup.h>
 #include <hurd/auth.h>

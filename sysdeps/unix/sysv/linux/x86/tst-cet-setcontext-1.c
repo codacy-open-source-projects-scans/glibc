@@ -1,6 +1,6 @@
 /* Check getcontext and setcontext on the context from makecontext
    with shadow stack.
-   Copyright (C) 2018-2023 Free Software Foundation, Inc.
+   Copyright (C) 2018-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -87,15 +87,14 @@ do_test (void)
   ctx[4].uc_link = &ctx[0];
   makecontext (&ctx[4], (void (*) (void)) f1, 0);
 
-  /* NB: When shadow stack is enabled, makecontext calls arch_prctl
-     with ARCH_CET_ALLOC_SHSTK to allocate a new shadow stack which
-     can be unmapped.  The base address and size of the new shadow
-     stack are returned in __ssp[1] and __ssp[2].  makecontext is
-     called for CTX1, CTX3 and CTX4.  But only CTX1 is used.  New
-     shadow stacks are allocated in the order of CTX3, CTX1, CTX4.
-     It is very likely that CTX1's shadow stack is placed between
-     CTX3 and CTX4.  We munmap CTX3's and CTX4's shadow stacks to
-     create gaps above and below CTX1's shadow stack.  We check
+  /* NB: When shadow stack is enabled, makecontext calls map_shadow_stack
+     to allocate a new shadow stack which can be unmapped.  The base
+     address and size of the new shadow stack are returned in __ssp[1]
+     and __ssp[2].  makecontext is called for CTX1, CTX3 and CTX4.  But
+     only CTX1 is used.  New shadow stacks are allocated in the order
+     of CTX3, CTX1, CTX4.  It is very likely that CTX1's shadow stack is
+     placed between CTX3 and CTX4.  We munmap CTX3's and CTX4's shadow
+     stacks to create gaps above and below CTX1's shadow stack.  We check
      that setcontext CTX1 works correctly in this case.  */
   if (_get_ssp () != 0)
     {

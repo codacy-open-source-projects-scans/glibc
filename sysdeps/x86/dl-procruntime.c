@@ -1,5 +1,5 @@
 /* Data for processor runtime information.  x86 version.
-   Copyright (C) 2018-2023 Free Software Foundation, Inc.
+   Copyright (C) 2018-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -67,6 +67,7 @@ PROCINFO_CLASS struct dl_x86_feature_control _dl_x86_feature_control
 = {
     .ibt = DEFAULT_DL_X86_CET_CONTROL,
     .shstk = DEFAULT_DL_X86_CET_CONTROL,
+    .plt_rewrite = plt_rewrite_none,
   }
 # endif
 # if !defined SHARED || defined PROCINFO_DECL

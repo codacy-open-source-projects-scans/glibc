@@ -1,5 +1,5 @@
 /* Data structure for x86 CPU features.
-   Copyright (C) 2020-2023 Free Software Foundation, Inc.
+   Copyright (C) 2020-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -990,6 +990,9 @@ extern const struct cpu_features *_dl_x86_get_cpu_features (void)
 # define INIT_ARCH()
 # define _dl_x86_get_cpu_features() (&GLRO(dl_x86_cpu_features))
 extern void _dl_x86_init_cpu_features (void) attribute_hidden;
+
+extern void _dl_cet_setup_features (unsigned int)
+    attribute_hidden;
 #endif
 
 #ifdef __x86_64__

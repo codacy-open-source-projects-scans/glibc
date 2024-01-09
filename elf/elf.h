@@ -1,5 +1,5 @@
 /* This file defines standard ELF types, structures, and macros.
-   Copyright (C) 1995-2023 Free Software Foundation, Inc.
+   Copyright (C) 1995-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -3639,6 +3639,11 @@ enum
 /* x86-64 sh_type values.  */
 #define SHT_X86_64_UNWIND	0x70000001 /* Unwind information.  */
 
+/* x86-64 d_tag values.  */
+#define DT_X86_64_PLT		(DT_LOPROC + 0)
+#define DT_X86_64_PLTSZ		(DT_LOPROC + 1)
+#define DT_X86_64_PLTENT	(DT_LOPROC + 3)
+#define DT_X86_64_NUM		4
 
 /* AM33 relocations.  */
 #define R_MN10300_NONE		0	/* No reloc.  */

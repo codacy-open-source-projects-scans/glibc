@@ -1,5 +1,5 @@
 /* Support for dynamic linking code in static libc.
-   Copyright (C) 1996-2023 Free Software Foundation, Inc.
+   Copyright (C) 1996-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -344,7 +344,6 @@ _dl_non_dynamic_init (void)
 DL_SYSINFO_IMPLEMENTATION
 #endif
 
-#if ENABLE_STATIC_PIE
 /* Since relocation to hidden _dl_main_map causes relocation overflow on
    aarch64, a function is used to get the address of _dl_main_map.  */
 
@@ -353,7 +352,6 @@ _dl_get_dl_main_map (void)
 {
   return &_dl_main_map;
 }
-#endif
 
 /* This is used by _dl_runtime_profile, not used on static code.  */
 void

@@ -1,6 +1,6 @@
 /* x86 CPU feature tuning.
    This file is part of the GNU C Library.
-   Copyright (C) 2017-2023 Free Software Foundation, Inc.
+   Copyright (C) 2017-2024 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,17 @@
   if (tunable_str_comma_strcmp_cte (&f, #name))				\
     {									\
       CPU_FEATURE_UNSET (cpu_features, name)				\
+      break;								\
+    }
+
+#define CHECK_GLIBC_IFUNC_CPU_BOTH(f, cpu_features, name, len)		\
+  _Static_assert (sizeof (#name) - 1 == len, #name " != " #len);	\
+  if (tunable_str_comma_strcmp_cte (&f, #name))				\
+    {									\
+      if (f.disable)							\
+	CPU_FEATURE_UNSET (cpu_features, name)				\
+      else								\
+	CPU_FEATURE_SET_ACTIVE (cpu_features, name)			\
       break;								\
     }
 
@@ -131,11 +142,13 @@ TUNABLE_CALLBACK (set_hwcaps) (tunable_val_t *valp)
 	    }
 	  break;
 	case 5:
+	  {
+	    CHECK_GLIBC_IFUNC_CPU_BOTH (n, cpu_features, SHSTK, 5);
+	  }
 	  if (n.disable)
 	    {
 	      CHECK_GLIBC_IFUNC_CPU_OFF (n, cpu_features, LZCNT, 5);
 	      CHECK_GLIBC_IFUNC_CPU_OFF (n, cpu_features, MOVBE, 5);
-	      CHECK_GLIBC_IFUNC_CPU_OFF (n, cpu_features, SHSTK, 5);
 	      CHECK_GLIBC_IFUNC_CPU_OFF (n, cpu_features, SSSE3, 5);
 	      CHECK_GLIBC_IFUNC_CPU_OFF (n, cpu_features, XSAVE, 5);
 	    }

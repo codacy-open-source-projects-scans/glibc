@@ -1,6 +1,6 @@
 /* Initialize CPU feature data.
    This file is part of the GNU C Library.
-   Copyright (C) 2008-2023 Free Software Foundation, Inc.
+   Copyright (C) 2008-2024 Free Software Foundation, Inc.
 
    The GNU C Library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -26,6 +26,22 @@
 
 extern void TUNABLE_CALLBACK (set_hwcaps) (tunable_val_t *)
   attribute_hidden;
+
+#ifdef SHARED
+static void
+TUNABLE_CALLBACK (set_plt_rewrite) (tunable_val_t *valp)
+{
+  if (valp->numval != 0)
+    {
+      /* Use JMPABS only on APX processors.  */
+      const struct cpu_features *cpu_features = __get_cpu_features ();
+      GL (dl_x86_feature_control).plt_rewrite
+	  = ((valp->numval > 1 && CPU_FEATURE_PRESENT_P (cpu_features, APX_F))
+		 ? plt_rewrite_jmpabs
+		 : plt_rewrite_jmp);
+    }
+}
+#endif
 
 #ifdef __LP64__
 static void
@@ -110,7 +126,7 @@ update_active (struct cpu_features *cpu_features)
   if (!CPU_FEATURES_CPU_P (cpu_features, RTM_ALWAYS_ABORT))
     CPU_FEATURE_SET_ACTIVE (cpu_features, RTM);
 
-#if CET_ENABLED
+#if CET_ENABLED && 0
   CPU_FEATURE_SET_ACTIVE (cpu_features, IBT);
   CPU_FEATURE_SET_ACTIVE (cpu_features, SHSTK);
 #endif
@@ -1106,55 +1122,12 @@ no_cpuid:
 	       TUNABLE_CALLBACK (set_x86_ibt));
   TUNABLE_GET (x86_shstk, tunable_val_t *,
 	       TUNABLE_CALLBACK (set_x86_shstk));
-
-  /* Check CET status.  */
-  unsigned int cet_status = get_cet_status ();
-
-  if ((cet_status & GNU_PROPERTY_X86_FEATURE_1_IBT) == 0)
-    CPU_FEATURE_UNSET (cpu_features, IBT)
-  if ((cet_status & GNU_PROPERTY_X86_FEATURE_1_SHSTK) == 0)
-    CPU_FEATURE_UNSET (cpu_features, SHSTK)
-
-  if (cet_status)
-    {
-      GL(dl_x86_feature_1) = cet_status;
-
-# ifndef SHARED
-      /* Check if IBT and SHSTK are enabled by kernel.  */
-      if ((cet_status & GNU_PROPERTY_X86_FEATURE_1_IBT)
-	  || (cet_status & GNU_PROPERTY_X86_FEATURE_1_SHSTK))
-	{
-	  /* Disable IBT and/or SHSTK if they are enabled by kernel, but
-	     disabled by environment variable:
-
-	     GLIBC_TUNABLES=glibc.cpu.hwcaps=-IBT,-SHSTK
-	   */
-	  unsigned int cet_feature = 0;
-	  if (!CPU_FEATURE_USABLE (IBT))
-	    cet_feature |= GNU_PROPERTY_X86_FEATURE_1_IBT;
-	  if (!CPU_FEATURE_USABLE (SHSTK))
-	    cet_feature |= GNU_PROPERTY_X86_FEATURE_1_SHSTK;
-
-	  if (cet_feature)
-	    {
-	      int res = dl_cet_disable_cet (cet_feature);
-
-	      /* Clear the disabled bits in dl_x86_feature_1.  */
-	      if (res == 0)
-		GL(dl_x86_feature_1) &= ~cet_feature;
-	    }
-
-	  /* Lock CET if IBT or SHSTK is enabled in executable.  Don't
-	     lock CET if IBT or SHSTK is enabled permissively.  */
-	  if (GL(dl_x86_feature_control).ibt != cet_permissive
-	      && GL(dl_x86_feature_control).shstk != cet_permissive)
-	    dl_cet_lock_cet ();
-	}
-# endif
-    }
 #endif
 
-#ifndef SHARED
+#ifdef SHARED
+  TUNABLE_GET (plt_rewrite, tunable_val_t *,
+	       TUNABLE_CALLBACK (set_plt_rewrite));
+#else
   /* NB: In libc.a, call init_cacheinfo.  */
   init_cacheinfo ();
 #endif
