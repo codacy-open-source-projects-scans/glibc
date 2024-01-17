@@ -27,11 +27,17 @@
 extern void TUNABLE_CALLBACK (set_hwcaps) (tunable_val_t *)
   attribute_hidden;
 
-#ifdef SHARED
+#if defined SHARED && defined __x86_64__
+# include <dl-plt-rewrite.h>
+
 static void
 TUNABLE_CALLBACK (set_plt_rewrite) (tunable_val_t *valp)
 {
-  if (valp->numval != 0)
+  /* We must be careful about where we put the call to
+     dl_plt_rewrite_supported() since it may generate
+     spurious SELinux log entries.  It should only be
+     attempted if the user requested a PLT rewrite.  */
+  if (valp->numval != 0 && dl_plt_rewrite_supported ())
     {
       /* Use JMPABS only on APX processors.  */
       const struct cpu_features *cpu_features = __get_cpu_features ();
@@ -1125,8 +1131,10 @@ no_cpuid:
 #endif
 
 #ifdef SHARED
+# ifdef __x86_64__
   TUNABLE_GET (plt_rewrite, tunable_val_t *,
 	       TUNABLE_CALLBACK (set_plt_rewrite));
+# endif
 #else
   /* NB: In libc.a, call init_cacheinfo.  */
   init_cacheinfo ();

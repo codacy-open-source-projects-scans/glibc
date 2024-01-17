@@ -170,7 +170,7 @@ class Context(object):
             if l.startswith(starttext):
                 l = l[len(starttext):]
                 l = l.rstrip('"\n')
-                m = re.fullmatch('([0-9]+)\.([0-9]+)[.0-9]*', l)
+                m = re.fullmatch(r'([0-9]+)\.([0-9]+)[.0-9]*', l)
                 return '%s.%s' % m.group(1, 2)
         print('error: could not determine glibc version')
         exit(1)
@@ -563,7 +563,7 @@ class Context(object):
                 print(config.name, config.compiler.name)
             return
         self.clear_last_build_state(action)
-        build_time = datetime.datetime.utcnow()
+        build_time = datetime.datetime.now(datetime.timezone.utc)
         if action == 'host-libraries':
             build_components = ('gmp', 'mpfr', 'mpc')
             old_components = ()

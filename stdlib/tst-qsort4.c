@@ -30,35 +30,12 @@ cmp (const void *a1, const void *b1, void *closure)
   return *a - *b;
 }
 
-/* Wrapper around heapsort_r that set ups the required variables.  */
-static void
-heapsort_wrapper (void *const pbase, size_t total_elems, size_t size,
-                  __compar_d_fn_t cmp, void *arg)
-{
-  char *base_ptr = (char *) pbase;
-  char *lo = base_ptr;
-  char *hi = &lo[size * (total_elems - 1)];
-
-  if (total_elems <= 1)
-    /* Avoid lossage with unsigned arithmetic below.  */
-    return;
-
-  enum swap_type_t swap_type;
-  if (is_aligned (pbase, size, 8))
-    swap_type = SWAP_WORDS_64;
-  else if (is_aligned (pbase, size, 4))
-    swap_type = SWAP_WORDS_32;
-  else
-    swap_type = SWAP_BYTES;
-  heapsort_r (lo, hi, size, swap_type, cmp, arg);
-}
-
 static void
 check_one_sort (signed char *array, int length)
 {
   signed char *copy = xmalloc (length);
   memcpy (copy, array, length);
-  heapsort_wrapper (copy, length, 1, cmp, NULL);
+  heapsort_r (copy, length - 1, 1, cmp, NULL);
 
   /* Verify that the result is sorted.  */
   for (int i = 1; i < length; ++i)
@@ -119,9 +96,7 @@ do_test (void)
   check_one_sort ((signed char[16]) {15, 3, 4, 2, 1, 0, 8, 7, 6, 5, 14,
                                      13, 12, 11, 10, 9}, 16);
 
-  /* Array lengths 2 and less are not handled by heapsort_r and
-     deferred to insertion sort.  */
-  for (int i = 3; i <= 8; ++i)
+  for (int i = 2; i <= 8; ++i)
     {
       signed char *buf = xmalloc (i);
       check_combinations (i, buf, 0);
