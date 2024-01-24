@@ -40,19 +40,6 @@ enum swap_type_t
 typedef uint32_t __attribute__ ((__may_alias__)) u32_alias_t;
 typedef uint64_t __attribute__ ((__may_alias__)) u64_alias_t;
 
-/* If this function returns true, elements can be safely copied using word
-   loads and stores.  Otherwise, it might not be safe.  BASE (as an integer)
-   must be a multiple of the word alignment.  SIZE must be a multiple of
-   WORDSIZE.  Since WORDSIZE must be a multiple of the word alignment, and
-   WORDSIZE is a power of two on all supported platforms, this function for
-   speed merely checks that BASE and SIZE are both multiples of the word
-   size.  */
-static inline bool
-is_aligned (const void *base, size_t size, size_t wordsize)
-{
-  return (((uintptr_t) base | size) & (wordsize - 1)) == 0;
-}
-
 static inline void
 swap_words_64 (void * restrict a, void * restrict b, size_t n)
 {
@@ -366,7 +353,7 @@ __qsort_r (void *const pbase, size_t total_elems, size_t size,
   if (size > INDIRECT_SORT_SIZE_THRES)
     total_size = 2 * total_elems * sizeof (void *) + size;
 
-  if (total_size < sizeof buf)
+  if (total_size <= sizeof tmp)
     buf = tmp;
   else
     {

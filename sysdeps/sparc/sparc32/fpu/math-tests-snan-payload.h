@@ -1,5 +1,5 @@
-/* Sigreturn stub function used on sa_restore field.
-   Copyright (C) 2020-2024 Free Software Foundation, Inc.
+/* Configuration for math tests: sNaN payloads.  SPARC version.
+   Copyright (C) 2016-2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,22 +16,15 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <sysdep.h>
+#ifndef SPARC_MATH_TESTS_SNAN_PAYLOAD_H
+#define SPARC_MATH_TESTS_SNAN_PAYLOAD_H 1
 
-/* These functions must not change the register window or the stack
-   pointer [1].
+/* LEON floating-point instructions do not preserve sNaN
+   payloads.  */
+#if defined (__leon__)
+# define SNAN_TESTS_PRESERVE_PAYLOAD	0
+#else
+# define SNAN_TESTS_PRESERVE_PAYLOAD	1
+#endif
 
-   [1] https://lkml.org/lkml/2016/5/27/465  */
-
-	nop
-	nop
-
-ENTRY_NOCFI (__rt_sigreturn_stub)
-	mov	__NR_rt_sigreturn, %g1
-	ta	0x10
-END_NOCFI (__rt_sigreturn_stub)
-
-ENTRY_NOCFI (__sigreturn_stub)
-	mov	__NR_sigreturn, %g1
-	ta	0x10
-END_NOCFI (__sigreturn_stub)
+#endif /* math-tests-snan-payload.h.  */
