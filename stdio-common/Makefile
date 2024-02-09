@@ -240,7 +240,7 @@ tests := \
   tst-renameat2 \
   tst-rndseek \
   tst-scanf-binary-c11 \
-  tst-scanf-binary-c2x \
+  tst-scanf-binary-c23 \
   tst-scanf-binary-gnu11 \
   tst-scanf-binary-gnu89 \
   tst-scanf-intn \
@@ -490,11 +490,12 @@ CFLAGS-tst-bz11319-fortify2.c += $(no-fortify-source),-D_FORTIFY_SOURCE=2
 
 CFLAGS-tst-memstream-string.c += -fno-builtin-fprintf
 
-# Some versions of GCC supported for building glibc do not support -std=c2x, so
-# the test for that version uses -std=c11 and then _ISOC2X_SOURCE is defined in
+# Some versions of GCC supported for building glibc do not support -std=c23
+# (added in GCC 14), or the older name -std=c2x (added in GCC 9), so
+# the test for that version uses -std=c11 and then _ISOC23_SOURCE is defined in
 # the test as needed.
 CFLAGS-tst-scanf-binary-c11.c += -std=c11 -DOBJPFX=\"$(objpfx)\"
-CFLAGS-tst-scanf-binary-c2x.c += -std=c11 -DOBJPFX=\"$(objpfx)\"
+CFLAGS-tst-scanf-binary-c23.c += -std=c11 -DOBJPFX=\"$(objpfx)\"
 CFLAGS-tst-scanf-binary-gnu11.c += -std=gnu11 -DOBJPFX=\"$(objpfx)\"
 CFLAGS-tst-scanf-binary-gnu89.c += -std=gnu89 -DOBJPFX=\"$(objpfx)\"
 
