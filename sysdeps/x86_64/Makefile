@@ -10,7 +10,7 @@ LDFLAGS-rtld += -Wl,-z,nomark-plt
 endif
 
 ifeq ($(subdir),csu)
-gen-as-const-headers += features-offsets.sym link-defines.sym
+gen-as-const-headers += link-defines.sym
 endif
 
 ifeq ($(subdir),gmon)
@@ -209,6 +209,12 @@ LDFLAGS-tst-plt-rewrite2 = -Wl,-z,now
 LDFLAGS-tst-plt-rewritemod2.so = -Wl,-z,now,-z,undefs
 tst-plt-rewrite2-ENV = GLIBC_TUNABLES=glibc.cpu.plt_rewrite=2
 $(objpfx)tst-plt-rewrite2: $(objpfx)tst-plt-rewritemod2.so
+endif
+
+# Check if ISA level is 3 or above.
+ifneq (,$(filter $(have-x86-isa-level),$(x86-isa-level-3-or-above)))
+valgrind-suppressions-tst-valgrind-smoke = \
+  --suppressions=$(..)sysdeps/x86_64/tst-valgrind-smoke.supp
 endif
 
 endif # $(subdir) == elf

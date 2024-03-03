@@ -285,6 +285,7 @@ tests-static-internal := \
   tst-tls1-static \
   tst-tls1-static-non-pie \
   tst-tunables \
+  tst-tunables-enable_secure \
   # tests-static-internal
 
 CRT-tst-tls1-static-non-pie := $(csu-objpfx)crt1.o
@@ -424,6 +425,7 @@ tests += \
   tst-glibc-hwcaps-prepend \
   tst-global1 \
   tst-global2 \
+  tst-gnu2-tls2 \
   tst-initfinilazyfail \
   tst-initorder \
   tst-initorder2 \
@@ -616,7 +618,8 @@ tests-special += $(objpfx)tst-valgrind-smoke.out
 endif
 $(objpfx)tst-valgrind-smoke.out: tst-valgrind-smoke.sh $(objpfx)ld.so $(objpfx)valgrind-test
 	$(SHELL) $< $(objpfx)ld.so  $(rtlddir)/$(rtld-installed-name) '$(test-wrapper-env)' \
-		'$(run-program-env)' '$(rpath-link)' $(objpfx)valgrind-test > $@; $(evaluate-test)
+		'$(run-program-env)' '$(rpath-link)' $(objpfx)valgrind-test \
+		'$(valgrind-suppressions-tst-valgrind-smoke)' > $@; $(evaluate-test)
 
 tests += $(tests-execstack-$(have-z-execstack))
 ifeq ($(run-built-tests),yes)
@@ -846,6 +849,9 @@ modules-names += \
   tst-filterobj-flt \
   tst-finilazyfailmod \
   tst-globalmod2 \
+  tst-gnu2-tls2mod0 \
+  tst-gnu2-tls2mod1 \
+  tst-gnu2-tls2mod2 \
   tst-initlazyfailmod \
   tst-initorder2a \
   tst-initorder2b \
@@ -2676,6 +2682,7 @@ $(objpfx)tst-glibc-hwcaps-mask.out: \
 $(objpfx)tst-glibc-hwcaps-cache.out: $(objpfx)tst-glibc-hwcaps
 
 tst-tunables-ARGS = -- $(host-test-program-cmd)
+tst-tunables-enable_secure-ARGS = -- $(host-test-program-cmd)
 
 $(objpfx)list-tunables.out: tst-rtld-list-tunables.sh $(objpfx)ld.so
 	$(SHELL) $< $(objpfx)ld.so '$(test-wrapper-env)' \
@@ -3044,8 +3051,22 @@ $(objpfx)tst-tlsgap.out: \
   $(objpfx)tst-tlsgap-mod0.so \
   $(objpfx)tst-tlsgap-mod1.so \
   $(objpfx)tst-tlsgap-mod2.so
+
+$(objpfx)tst-gnu2-tls2: $(shared-thread-library)
+$(objpfx)tst-gnu2-tls2.out: \
+  $(objpfx)tst-gnu2-tls2mod0.so \
+  $(objpfx)tst-gnu2-tls2mod1.so \
+  $(objpfx)tst-gnu2-tls2mod2.so
+
 ifeq (yes,$(have-mtls-dialect-gnu2))
+# This test fails if dl_tlsdesc_dynamic doesn't preserve all caller-saved
+# registers.  See https://sourceware.org/bugzilla/show_bug.cgi?id=31372
+test-xfail-tst-gnu2-tls2 = yes
+
 CFLAGS-tst-tlsgap-mod0.c += -mtls-dialect=gnu2
 CFLAGS-tst-tlsgap-mod1.c += -mtls-dialect=gnu2
 CFLAGS-tst-tlsgap-mod2.c += -mtls-dialect=gnu2
+CFLAGS-tst-gnu2-tls2mod0.c += -mtls-dialect=gnu2
+CFLAGS-tst-gnu2-tls2mod1.c += -mtls-dialect=gnu2
+CFLAGS-tst-gnu2-tls2mod2.c += -mtls-dialect=gnu2
 endif
