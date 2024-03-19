@@ -1,4 +1,4 @@
-/* memcopy.h -- definitions for memory copy functions. RISC-V version.
+/* Enumerate available IFUNC implementations of a function.  RISCV version.
    Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -16,11 +16,28 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <sysdeps/generic/memcopy.h>
+#include <ifunc-impl-list.h>
+#include <string.h>
+#include <sys/hwprobe.h>
 
-/* Redefine the generic memcpy implementation to __memcpy_generic, so
-   the memcpy ifunc can select between generic and special versions.
-   In rtld, don't bother with all the ifunciness. */
-#if IS_IN (libc)
-#define MEMCPY __memcpy_generic
-#endif
+size_t
+__libc_ifunc_impl_list (const char *name, struct libc_ifunc_impl *array,
+			size_t max)
+{
+  size_t i = max;
+
+  bool fast_unaligned = false;
+
+  struct riscv_hwprobe pair = { .key = RISCV_HWPROBE_KEY_CPUPERF_0 };
+  if (__riscv_hwprobe (&pair, 1, 0, NULL, 0) == 0
+      && (pair.value & RISCV_HWPROBE_MISALIGNED_MASK)
+          == RISCV_HWPROBE_MISALIGNED_FAST)
+    fast_unaligned = true;
+
+  IFUNC_IMPL (i, name, memcpy,
+	      IFUNC_IMPL_ADD (array, i, memcpy, fast_unaligned,
+			      __memcpy_noalignment)
+	      IFUNC_IMPL_ADD (array, i, memcpy, 1, __memcpy_generic))
+
+  return 0;
+}
