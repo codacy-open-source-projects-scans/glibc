@@ -135,7 +135,11 @@ void *_dl_random;
 #include <dl-procruntime.c>
 #include <dl-procinfo.c>
 
-size_t _dl_pagesize = EXEC_PAGESIZE;
+size_t _dl_pagesize
+#ifdef EXEC_PAGESIZE
+  = EXEC_PAGESIZE
+#endif
+;
 
 size_t _dl_minsigstacksize = CONSTANT_MINSIGSTKSZ;
 
@@ -158,6 +162,8 @@ const ElfW(Phdr) *_dl_phdr;
 size_t _dl_phnum;
 uint64_t _dl_hwcap;
 uint64_t _dl_hwcap2;
+uint64_t _dl_hwcap3;
+uint64_t _dl_hwcap4;
 
 enum dso_sort_algorithm _dl_dso_sort_algo;
 
