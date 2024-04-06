@@ -1,5 +1,5 @@
-/* Truncate long double value.
-   Copyright (C) 1997-2024 Free Software Foundation, Inc.
+/* Return smallest integral value not less than argument.  x86 version.
+   Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,24 +17,9 @@
    <https://www.gnu.org/licenses/>.  */
 
 #include <libm-alias-ldouble.h>
-#include <machine/asm.h>
 
-ENTRY(__truncl)
-	fldt	4(%esp)
-	subl	$32, %esp
-	cfi_adjust_cfa_offset (32)
-	fnstenv	4(%esp)
-	movl	$0xc00, %edx
-	orl	4(%esp), %edx
-	movl	%edx, (%esp)
-	fldcw	(%esp)
-	frndint
-	fnstsw
-	andl	$0x1, %eax
-	orl	%eax, 8(%esp)
-	fldenv	4(%esp)
-	addl	$32, %esp
-	cfi_adjust_cfa_offset (-32)
-	ret
-END(__truncl)
-libm_alias_ldouble (__trunc, trunc)
+#define FUNC       __ceill
+#define TYPE       long double
+#define FE_OPTION  FE_UPWARD
+#include "s_nearestint_387_template.c"
+libm_alias_ldouble (__ceil, ceil)
