@@ -1,6 +1,5 @@
-/* Common definition for ifunc selections optimized with AVX2/FMA and
-   FMA4.
-   Copyright (C) 2017-2024 Free Software Foundation, Inc.
+/* getpeername with error checking.
+   Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,25 +16,15 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <init-arch.h>
+#include <support/xsocket.h>
 
-extern __typeof (REDIRECT_NAME) OPTIMIZE (sse2) attribute_hidden;
-extern __typeof (REDIRECT_NAME) OPTIMIZE (fma) attribute_hidden;
-extern __typeof (REDIRECT_NAME) OPTIMIZE (fma4) attribute_hidden;
+#include <stdio.h>
+#include <stdlib.h>
+#include <support/check.h>
 
-static inline void *
-IFUNC_SELECTOR (void)
+void
+xgetpeername (int fd, struct sockaddr *sa, socklen_t *plen)
 {
-  const struct cpu_features* cpu_features = __get_cpu_features ();
-
-  if (CPU_FEATURE_USABLE_P (cpu_features, FMA)
-      && CPU_FEATURE_USABLE_P (cpu_features, AVX2))
-    return OPTIMIZE (fma);
-
-#ifndef HAVE_X86_APX
-  if (CPU_FEATURE_USABLE_P (cpu_features, FMA4))
-    return OPTIMIZE (fma4);
-#endif
-
-  return OPTIMIZE (sse2);
+  if (getpeername (fd, sa, plen) != 0)
+    FAIL_EXIT1 ("getpeername (%d): %m", fd);
 }

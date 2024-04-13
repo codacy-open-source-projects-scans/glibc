@@ -1,4 +1,5 @@
-/* Copyright (C) 1991-2024 Free Software Foundation, Inc.
+/* Test wcsstr function.
+   Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,24 +16,5 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <stdio.h>
-#include "tmpdir.h"
-
-/* Generate a unique filename in P_tmpdir.  If S is NULL return NULL.
-   This makes this function thread safe.  */
-char *
-tmpnam_r (char s[L_tmpnam])
-{
-  if (s == NULL)
-    return NULL;
-
-  if (__path_search (s, L_tmpnam, NULL, NULL, 0))
-    return NULL;
-  if (__gen_tempname (s, 0, 0, __GT_NOCREATE))
-    return NULL;
-
-  return s;
-}
-
-link_warning (tmpnam_r,
-	      "the use of `tmpnam_r' is dangerous, better use `mkstemp'")
+#define WIDE 1
+#include <string/test-strstr.c>

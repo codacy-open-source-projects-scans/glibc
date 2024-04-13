@@ -240,10 +240,6 @@
 
 #ifdef	_LIBC
 
-/* The zic and zdump programs need these definitions.  */
-
-#define	HAVE_STRERROR	1
-
 /* The locale code needs these definitions.  */
 
 #define HAVE_REGEX 1
@@ -294,5 +290,8 @@
 
 /* Define if -mmovbe is enabled by default on x86.  */
 #undef HAVE_X86_MOVBE
+
+/* Define if -mapxf is enabled by default on x86.  */
+#undef HAVE_X86_APX
 
 #endif

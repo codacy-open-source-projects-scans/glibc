@@ -1,4 +1,5 @@
-/* Copyright (C) 1991-2024 Free Software Foundation, Inc.
+/* CPU affinity handling for the dynamic linker.  Linux version.
+   Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -15,25 +16,31 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#define __need_size_t
+/* See sysdeps/generic/dl-affinity.h for documentation of these interfaces.  */
+
+#ifndef DL_AFFINITY_H
+#define DL_AFFINITY_H
+
+#include <sysdep.h>
 #include <stddef.h>
-#include <stdio.h>
-#include <errno.h>
+#include <unistd.h>
 
-/* Generate a (hopefully) unique temporary filename
-   in DIR (if applicable), using template TMPL.
-   KIND determines what to do with that name.  It may be one of:
-     __GT_FILE:		create a file and return a read-write fd.
-     __GT_BIGFILE:	same, but use open64() (or equivalent).
-     __GT_DIR:		create a directory.
-     __GT_NOCREATE:	just find a name not currently in use.
- */
-
-int
-__gen_tempname (char *tmpl, int suffixlen, int flags, int kind)
+static inline int
+_dl_getcpu (unsigned int *cpu, unsigned int *node)
 {
-  __set_errno (ENOSYS);
-  return -1;
+  return INTERNAL_SYSCALL_CALL (getcpu, cpu, node);
 }
 
-stub_warning (__gen_tempname)
+static int
+_dl_getaffinity (unsigned long int *bits, size_t size)
+{
+  return INTERNAL_SYSCALL_CALL (sched_getaffinity, /* TID */ 0, size, bits);
+}
+
+static int
+_dl_setaffinity (const unsigned long int *bits, size_t size)
+{
+  return INTERNAL_SYSCALL_CALL (sched_setaffinity, /* TID */ 0, size, bits);
+}
+
+#endif /* DL_AFFINITY_H */

@@ -1,6 +1,5 @@
-/* Common definition for ifunc selections optimized with AVX2/FMA and
-   FMA4.
-   Copyright (C) 2017-2024 Free Software Foundation, Inc.
+/* Verify that static pthread executable works.
+   Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,25 +16,22 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <init-arch.h>
+#include <pthread.h>
+#include <support/check.h>
 
-extern __typeof (REDIRECT_NAME) OPTIMIZE (sse2) attribute_hidden;
-extern __typeof (REDIRECT_NAME) OPTIMIZE (fma) attribute_hidden;
-extern __typeof (REDIRECT_NAME) OPTIMIZE (fma4) attribute_hidden;
+pthread_key_t k;
 
-static inline void *
-IFUNC_SELECTOR (void)
+static int
+do_test (void)
 {
-  const struct cpu_features* cpu_features = __get_cpu_features ();
+  int rc;
 
-  if (CPU_FEATURE_USABLE_P (cpu_features, FMA)
-      && CPU_FEATURE_USABLE_P (cpu_features, AVX2))
-    return OPTIMIZE (fma);
+  rc = pthread_key_create (&k, NULL);
+  TEST_VERIFY (rc == 0);
+  rc = pthread_setspecific (k, NULL);
+  TEST_VERIFY (rc == 0);
 
-#ifndef HAVE_X86_APX
-  if (CPU_FEATURE_USABLE_P (cpu_features, FMA4))
-    return OPTIMIZE (fma4);
-#endif
-
-  return OPTIMIZE (sse2);
+  return 0;
 }
+
+#include <support/test-driver.c>
