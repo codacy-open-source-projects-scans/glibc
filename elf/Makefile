@@ -315,6 +315,7 @@ tests := \
   tst-leaks1 \
   tst-stringtable \
   tst-tls9 \
+  tst-tunables-enable_secure-env \
   # tests
 
 tests-internal := \
@@ -618,8 +619,7 @@ tests-special += $(objpfx)tst-valgrind-smoke.out
 endif
 $(objpfx)tst-valgrind-smoke.out: tst-valgrind-smoke.sh $(objpfx)ld.so $(objpfx)valgrind-test
 	$(SHELL) $< $(objpfx)ld.so  $(rtlddir)/$(rtld-installed-name) '$(test-wrapper-env)' \
-		'$(run-program-env)' '$(rpath-link)' $(objpfx)valgrind-test \
-		'$(valgrind-suppressions-tst-valgrind-smoke)' > $@; $(evaluate-test)
+		'$(run-program-env)' '$(rpath-link)' $(objpfx)valgrind-test > $@; $(evaluate-test)
 
 ifeq ($(run-built-tests),yes)
 tests-special += $(objpfx)tst-rtld-does-not-exist.out
@@ -1189,6 +1189,7 @@ tests-special += \
   $(objpfx)tst-trace3.out \
   $(objpfx)tst-trace4.out \
   $(objpfx)tst-trace5.out \
+  $(objpfx)tst-tunables-enable_secure-env.out \
   $(objpfx)tst-unused-dep-cmp.out \
   $(objpfx)tst-unused-dep.out \
   # tests-special
@@ -2215,6 +2216,14 @@ $(objpfx)tst-unused-dep.out: $(objpfx)testobj1.so
 $(objpfx)tst-unused-dep-cmp.out: $(objpfx)tst-unused-dep.out
 	cmp $< /dev/null > $@; \
 	$(evaluate-test)
+
+$(objpfx)tst-tunables-enable_secure-env.out: $(objpfx)tst-tunables-enable_secure-env
+	$(test-wrapper-env) \
+	GLIBC_TUNABLES=glibc.rtld.enable_secure=1 \
+	$(rtld-prefix) \
+	  $< > $@; \
+	$(evaluate-test)
+
 
 $(objpfx)tst-audit11.out: $(objpfx)tst-auditmod11.so $(objpfx)tst-audit11mod1.so
 tst-audit11-ENV = LD_AUDIT=$(objpfx)tst-auditmod11.so
