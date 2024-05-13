@@ -522,7 +522,7 @@ addinnetgrX (struct database_dyn *db, int fd, request_header *req,
   if (__glibc_unlikely (dataset == NULL))
     {
       cacheable = false;
-      /* The alloca is safe because nscd_run_worker verfies that
+      /* The alloca is safe because nscd_run_worker verifies that
 	 key_len is not larger than MAXKEYLEN.  */
       dataset = alloca (sizeof (*dataset) + req->key_len);
     }
@@ -680,8 +680,8 @@ readdinnetgr (struct database_dyn *db, struct hashentry *he,
       .key_len = he->len
     };
 
-  int timeout = addinnetgrX (db, -1, &req, db->data + he->key, he->owner,
-			     he, dh);
+  time_t timeout = addinnetgrX (db, -1, &req, db->data + he->key, he->owner,
+				he, dh);
   if (timeout < 0)
     timeout = 0;
   return timeout;

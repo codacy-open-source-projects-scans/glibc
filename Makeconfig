@@ -360,6 +360,8 @@ whole-archive = -Wl,--whole-archive
 # Installed name of the startup code.
 # The ELF convention is that the startfile is called crt1.o
 start-installed-name = crt1.o
+# Similar to crt1.o, but without _IO_stdin_used.
+start-name-2.0 = crt1-2.0.o
 # On systems that do not need a special startfile for statically linked
 # binaries, simply set it to the normal name.
 ifndef static-start-installed-name
@@ -537,6 +539,25 @@ else  # build-static
 endif  # build-shared
 endif  # +link
 
+# Command for linking test programs with crt1.o from glibc 2.0.
++link-2.0-before-inputs = -nostdlib -nostartfiles $(no-pie-ldflag) \
+	      $(sysdep-LDFLAGS) $(LDFLAGS) $(LDFLAGS-$(@F)) \
+	      $(relro-LDFLAGS) $(hashstyle-LDFLAGS) \
+	      $(firstword $(CRT-$(@F)) $(csu-objpfx)$(start-name-2.0)) \
+	      $(+preinit) $(+prector)
++link-2.0-before-libc = -o $@ $(+link-2.0-before-inputs) \
+	      $(filter-out $(addprefix $(csu-objpfx),start.o \
+						     $(start-name-2.0))\
+			   $(+preinit) $(link-extra-libs) \
+			   $(common-objpfx)libc% $(+postinit),$^) \
+	      $(link-extra-libs)
++link-after-libc = $(+postctor) $(+postinit)
+define +link-2.0-tests
+$(CC) $(+link-2.0-before-libc) $(rtld-tests-LDFLAGS) $(link-libc-tests) \
+  $(+link-after-libc)
+$(call after-link,$@)
+endef
+
 # The pretty printer test programs need to be compiled without optimizations
 # so they won't confuse gdb.  We could use either the 'GCC optimize' pragma
 # or the 'optimize' function attribute to achieve this; however, at least on
@@ -586,10 +607,13 @@ link-libc-rpath-link = -Wl,-rpath-link=$(rpath-link)
 # before the expansion of LDLIBS-* variables).
 
 # Tests use -Wl,-rpath instead of -Wl,-rpath-link for
-# build-hardcoded-path-in-tests.
+# build-hardcoded-path-in-tests.  Add -Wl,--disable-new-dtags to force
+# DT_RPATH instead of DT_RUNPATH which only applies to DT_NEEDED entries
+# in the executable and doesn't applies to DT_NEEDED entries in shared
+# libraries which are loaded via DT_NEEDED entries in the executable.
 ifeq (yes,$(build-hardcoded-path-in-tests))
-link-libc-tests-rpath-link = $(link-libc-rpath)
-link-test-modules-rpath-link = $(link-libc-rpath)
+link-libc-tests-rpath-link = $(link-libc-rpath) -Wl,--disable-new-dtags
+link-test-modules-rpath-link = $(link-libc-rpath) -Wl,--disable-new-dtags
 else
 link-libc-tests-rpath-link = $(link-libc-rpath-link)
 link-test-modules-rpath-link =
