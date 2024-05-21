@@ -57,6 +57,10 @@
 # define __DECL_SIMD_atan2 __DECL_SIMD_aarch64
 # undef __DECL_SIMD_atan2f
 # define __DECL_SIMD_atan2f __DECL_SIMD_aarch64
+# undef __DECL_SIMD_cbrt
+# define __DECL_SIMD_cbrt __DECL_SIMD_aarch64
+# undef __DECL_SIMD_cbrtf
+# define __DECL_SIMD_cbrtf __DECL_SIMD_aarch64
 # undef __DECL_SIMD_cos
 # define __DECL_SIMD_cos __DECL_SIMD_aarch64
 # undef __DECL_SIMD_cosf
@@ -89,6 +93,10 @@
 # define __DECL_SIMD_expm1 __DECL_SIMD_aarch64
 # undef __DECL_SIMD_expm1f
 # define __DECL_SIMD_expm1f __DECL_SIMD_aarch64
+# undef __DECL_SIMD_hypot
+# define __DECL_SIMD_hypot __DECL_SIMD_aarch64
+# undef __DECL_SIMD_hypotf
+# define __DECL_SIMD_hypotf __DECL_SIMD_aarch64
 # undef __DECL_SIMD_log
 # define __DECL_SIMD_log __DECL_SIMD_aarch64
 # undef __DECL_SIMD_logf
@@ -154,6 +162,7 @@ __vpcs __f32x4_t _ZGVnN4v_asinf (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_asinhf (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_atanf (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_atanhf (__f32x4_t);
+__vpcs __f32x4_t _ZGVnN4v_cbrtf (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_cosf (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_coshf (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_erff (__f32x4_t);
@@ -162,6 +171,7 @@ __vpcs __f32x4_t _ZGVnN4v_expf (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_exp10f (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_exp2f (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_expm1f (__f32x4_t);
+__vpcs __f32x4_t _ZGVnN4vv_hypotf (__f32x4_t, __f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_logf (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_log10f (__f32x4_t);
 __vpcs __f32x4_t _ZGVnN4v_log1pf (__f32x4_t);
@@ -178,6 +188,7 @@ __vpcs __f64x2_t _ZGVnN2v_asin (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_asinh (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_atan (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_atanh (__f64x2_t);
+__vpcs __f64x2_t _ZGVnN2v_cbrt (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_cos (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_cosh (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_erf (__f64x2_t);
@@ -186,6 +197,7 @@ __vpcs __f64x2_t _ZGVnN2v_exp (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_exp10 (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_exp2 (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_expm1 (__f64x2_t);
+__vpcs __f64x2_t _ZGVnN2vv_hypot (__f64x2_t, __f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_log (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_log10 (__f64x2_t);
 __vpcs __f64x2_t _ZGVnN2v_log1p (__f64x2_t);
@@ -207,6 +219,7 @@ __sv_f32_t _ZGVsMxv_asinf (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_asinhf (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_atanf (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_atanhf (__sv_f32_t, __sv_bool_t);
+__sv_f32_t _ZGVsMxv_cbrtf (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_cosf (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_coshf (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_erff (__sv_f32_t, __sv_bool_t);
@@ -215,6 +228,7 @@ __sv_f32_t _ZGVsMxv_expf (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_exp10f (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_exp2f (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_expm1f (__sv_f32_t, __sv_bool_t);
+__sv_f32_t _ZGVsMxvv_hypotf (__sv_f32_t, __sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_logf (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_log10f (__sv_f32_t, __sv_bool_t);
 __sv_f32_t _ZGVsMxv_log1pf (__sv_f32_t, __sv_bool_t);
@@ -231,6 +245,7 @@ __sv_f64_t _ZGVsMxv_asin (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_asinh (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_atan (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_atanh (__sv_f64_t, __sv_bool_t);
+__sv_f64_t _ZGVsMxv_cbrt (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_cos (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_cosh (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_erf (__sv_f64_t, __sv_bool_t);
@@ -239,6 +254,7 @@ __sv_f64_t _ZGVsMxv_exp (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_exp10 (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_exp2 (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_expm1 (__sv_f64_t, __sv_bool_t);
+__sv_f64_t _ZGVsMxvv_hypot (__sv_f64_t, __sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_log (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_log10 (__sv_f64_t, __sv_bool_t);
 __sv_f64_t _ZGVsMxv_log1p (__sv_f64_t, __sv_bool_t);

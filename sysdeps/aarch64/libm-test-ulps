@@ -477,10 +477,18 @@ double: 4
 float: 1
 ldouble: 1
 
+Function: "cbrt_advsimd":
+double: 1
+float: 1
+
 Function: "cbrt_downward":
 double: 4
 float: 1
 ldouble: 1
+
+Function: "cbrt_sve":
+double: 1
+float: 1
 
 Function: "cbrt_towardzero":
 double: 3
@@ -1174,9 +1182,17 @@ double: 1
 float: 1
 ldouble: 1
 
+Function: "hypot_advsimd":
+double: 1
+float: 1
+
 Function: "hypot_downward":
 double: 1
 ldouble: 1
+
+Function: "hypot_sve":
+double: 1
+float: 1
 
 Function: "hypot_towardzero":
 double: 1
@@ -1354,6 +1370,26 @@ Function: "log2_upward":
 double: 3
 float: 3
 ldouble: 1
+
+Function: "log2p1":
+double: 1
+float: 1
+ldouble: 3
+
+Function: "log2p1_downward":
+double: 2
+float: 2
+ldouble: 3
+
+Function: "log2p1_towardzero":
+double: 2
+float: 2
+ldouble: 2
+
+Function: "log2p1_upward":
+double: 1
+float: 2
+ldouble: 2
 
 Function: "log_advsimd":
 double: 1
