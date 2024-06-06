@@ -1,6 +1,5 @@
-/* getsockname with error checking.
-   Copyright (C) 2016-2024 Free Software Foundation, Inc.
-   Copyright The GNU Toolchain Authors.
+/* Test for fdopen memory leak without SEEK_END support (bug 31840).
+   Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,15 +16,33 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <support/xsocket.h>
 
+#include <errno.h>
+#include <fcntl.h>
+#include <mcheck.h>
+#include <stddef.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <support/check.h>
+#include <support/xunistd.h>
+#include <unistd.h>
 
-void
-xgetsockname (int fd, struct sockaddr *sa, socklen_t *plen)
+static int
+do_test (void)
 {
-  if (getsockname (fd, sa, plen) != 0)
-    FAIL_EXIT1 ("getsockname (%d): %m", fd);
+  mtrace ();
+
+  /* This file is special because it is seekable, but only
+     with SEEK_SET, not SEEK_END.  */
+  int fd = open ("/proc/self/mem", O_RDWR);
+  if (fd < 0)
+    FAIL_UNSUPPORTED ("/proc/self/mem not found: %m");
+  FILE *fp = fdopen (fd, "a");
+  /* The fdopen call should have failed because it tried to use
+     SEEK_END.  */
+  TEST_VERIFY (fp == NULL);
+  TEST_COMPARE (errno, EINVAL);
+  xclose (fd);
+  return 0;
 }
+
+#include <support/test-driver.c>
