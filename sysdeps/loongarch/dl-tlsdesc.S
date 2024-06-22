@@ -81,7 +81,7 @@ _dl_tlsdesc_undefweak:
 	   _dl_tlsdesc_dynamic (struct tlsdesc *tdp)
 	   {
 	     struct tlsdesc_dynamic_arg *td = tdp->arg;
-	     dtv_t *dtv = *(dtv_t **)((char *)__thread_pointer - TCBHEAD_DTV);
+	     dtv_t *dtv = *(dtv_t **)((char *)__thread_pointer - SIZE_OF_TCB);
 	     if (__glibc_likely (td->gen_count <= dtv[0].counter
 		&& (dtv[td->tlsinfo.ti_module].pointer.val
 		    != TLS_DTV_UNALLOCATED),
@@ -100,7 +100,7 @@ _dl_tlsdesc_undefweak:
 _dl_tlsdesc_dynamic:
 	/* Save just enough registers to support fast path, if we fall
 	   into slow path we will save additional registers.  */
-	ADDI	sp, sp, -24
+	ADDI	sp, sp, -32
 	REG_S	t0, sp, 0
 	REG_S	t1, sp, 8
 	REG_S	t2, sp, 16
@@ -141,7 +141,7 @@ Hign address	dynamic_block1 <----- dtv5  */
 	REG_L	t0, sp, 0
 	REG_L	t1, sp, 8
 	REG_L	t2, sp, 16
-	ADDI	sp, sp, 24
+	ADDI	sp, sp, 32
 	RET
 
 .Lslow:
@@ -171,15 +171,14 @@ Hign address	dynamic_block1 <----- dtv5  */
 	/* Save fcsr0 register.
 	   Only one physical fcsr0 register, fcsr1-fcsr3 are aliases
 	   of some fields in fcsr0.  */
-	ADDI	sp, sp, -SZFCSREG
 	movfcsr2gr  t0, fcsr0
-	st.w	t0, sp, 0
+	st.w	t0, sp, FRAME_SIZE + 24 /* Use the spare slot above t2 */
 
 	/* Whether support LASX.  */
 	la.global   t0, _rtld_global_ro
 	REG_L	t0, t0, GLRO_DL_HWCAP_OFFSET
-	andi	t0, t0, HWCAP_LOONGARCH_LASX
-	beqz	t0, .Llsx
+	andi	t1, t0, HWCAP_LOONGARCH_LASX
+	beqz	t1, .Llsx
 
 	/* Save 256-bit vector registers.
 	   FIXME: Without vector ABI, save all vector registers.  */
@@ -220,8 +219,8 @@ Hign address	dynamic_block1 <----- dtv5  */
 
 .Llsx:
 	/* Whether support LSX.  */
-	andi	t0, t0, HWCAP_LOONGARCH_LSX
-	beqz	t0, .Lfloat
+	andi	t1, t0, HWCAP_LOONGARCH_LSX
+	beqz	t1, .Lfloat
 
 	/* Save 128-bit vector registers.  */
 	ADDI	sp, sp, -FRAME_SIZE_LSX
@@ -297,8 +296,8 @@ Hign address	dynamic_block1 <----- dtv5  */
 
 	la.global   t0, _rtld_global_ro
 	REG_L	t0, t0, GLRO_DL_HWCAP_OFFSET
-	andi	t0, t0, HWCAP_LOONGARCH_LASX
-	beqz	t0, .Llsx1
+	andi	t1, t0, HWCAP_LOONGARCH_LASX
+	beqz	t1, .Llsx1
 
 	/* Restore 256-bit vector registers.  */
 	xvld	xr0, sp, 0*SZXREG
@@ -337,8 +336,8 @@ Hign address	dynamic_block1 <----- dtv5  */
 	b .Lfcsr
 
 .Llsx1:
-	andi	t0, s0, HWCAP_LOONGARCH_LSX
-	beqz	t0, .Lfloat1
+	andi	t1, t0, HWCAP_LOONGARCH_LSX
+	beqz	t1, .Lfloat1
 
 	/* Restore 128-bit vector registers.  */
 	vld	vr0, sp, 0*SZVREG
@@ -406,9 +405,8 @@ Hign address	dynamic_block1 <----- dtv5  */
 
 .Lfcsr:
 	/* Restore fcsr0 register.  */
-	ld.w	t0, sp, 0
+	ld.w	t0, sp, FRAME_SIZE + 24
 	movgr2fcsr  fcsr0, t0
-	ADDI	sp, sp, SZFCSREG
 
 #endif /* #ifndef __loongarch_soft_float */
 

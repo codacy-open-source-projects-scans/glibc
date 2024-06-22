@@ -16,9 +16,8 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-/* This information must be kept in sync with the _DL_HWCAP_COUNT,
-   HWCAP_PLATFORMS_START and HWCAP_PLATFORMS_COUNT definitions in
-   dl-hwcap.h.
+/* This information must be kept in sync with the _DL_HWCAP_COUNT
+   definition in dl-hwcap.h.
 
    If anything should be added here check whether the size of each string
    is still ok with the given array size.
@@ -63,22 +62,6 @@ PROCINFO_CLASS const char _dl_x86_hwcap_flags[3][9]
 #ifndef PROCINFO_DECL
 = {
     "sse2", "x86_64", "avx512_1"
-  }
-#endif
-#if !defined SHARED || defined PROCINFO_DECL
-;
-#else
-,
-#endif
-
-#if !defined PROCINFO_DECL && defined SHARED
-  ._dl_x86_platforms
-#else
-PROCINFO_CLASS const char _dl_x86_platforms[4][9]
-#endif
-#ifndef PROCINFO_DECL
-= {
-    "i586", "i686", "haswell", "xeon_phi"
   }
 #endif
 #if !defined SHARED || defined PROCINFO_DECL

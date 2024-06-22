@@ -34,16 +34,8 @@
 /* AT_HWCAP4 feature strings follow the AT_HWCAP3 feature strings.  */
 #define _DL_HWCAP4_OFFSET	(_DL_HWCAP3_OFFSET + _DL_HWCAP_SIZE)
 
-/* These bits influence library search.  */
-#define HWCAP_IMPORTANT		(PPC_FEATURE_HAS_ALTIVEC \
-				+ PPC_FEATURE_HAS_DFP)
-
-#define _DL_PLATFORMS_COUNT	17
 
 #define _DL_FIRST_PLATFORM	32
-/* Mask to filter out platforms.  */
-#define _DL_HWCAP_PLATFORM	(((1ULL << _DL_PLATFORMS_COUNT) - 1) \
-				<< _DL_FIRST_PLATFORM)
 
 /* Platform bits (relative to _DL_FIRST_PLATFORM).  */
 #define PPC_PLATFORM_POWER4		0

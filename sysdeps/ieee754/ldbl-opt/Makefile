@@ -61,8 +61,10 @@ libnldbl-calls = \
   erf \
   erfc \
   exp \
+  exp10m1 \
   exp2 \
   exp10 \
+  exp2m1 \
   expm1 \
   fabs \
   fadd \
@@ -140,6 +142,7 @@ libnldbl-calls = \
   log \
   log2 \
   log10 \
+  log10p1 \
   log1p \
   log2p1 \
   logb \
@@ -295,7 +298,9 @@ CFLAGS-nldbl-erf.c = -fno-builtin-erfl
 CFLAGS-nldbl-erfc.c = -fno-builtin-erfcl
 CFLAGS-nldbl-exp.c = -fno-builtin-expl
 CFLAGS-nldbl-exp10.c = -fno-builtin-exp10l
+CFLAGS-nldbl-exp10m1.c = -fno-builtin-exp10m1l
 CFLAGS-nldbl-exp2.c = -fno-builtin-exp2l
+CFLAGS-nldbl-exp2m1.c = -fno-builtin-exp2m1l
 CFLAGS-nldbl-expm1.c = -fno-builtin-expm1l
 CFLAGS-nldbl-fabs.c = -fno-builtin-fabsl
 CFLAGS-nldbl-fadd.c = -fno-builtin-faddl
@@ -341,7 +346,8 @@ CFLAGS-nldbl-llrint.c = -fno-builtin-llrintl
 CFLAGS-nldbl-llround.c = -fno-builtin-llroundl
 CFLAGS-nldbl-log.c = -fno-builtin-logl
 CFLAGS-nldbl-log10.c = -fno-builtin-log10l
-CFLAGS-nldbl-log1p.c = -fno-builtin-log1pl
+CFLAGS-nldbl-log10p1.c = -fno-builtin-log10p1l
+CFLAGS-nldbl-log1p.c = -fno-builtin-log1pl -fno-builtin-logp1l
 CFLAGS-nldbl-log2.c = -fno-builtin-log2l
 CFLAGS-nldbl-log2p1.c = -fno-builtin-log2p1l
 CFLAGS-nldbl-logb.c = -fno-builtin-logbl
