@@ -73,6 +73,7 @@ dl-routines = \
   dl-origin \
   dl-printf \
   dl-reloc \
+  dl-rseq-symbols \
   dl-runtime \
   dl-scope \
   dl-setup_hash \
@@ -445,6 +446,7 @@ tests += \
   tst-p_align1 \
   tst-p_align2 \
   tst-p_align3 \
+  tst-recursive-tls \
   tst-relsort1 \
   tst-ro-dynamic \
   tst-rtld-run-static \
@@ -632,13 +634,19 @@ $(objpfx)tst-rtld-does-not-exist.out: tst-rtld-does-not-exist.sh $(objpfx)ld.so
 tests += $(tests-execstack-$(have-z-execstack))
 ifeq ($(run-built-tests),yes)
 tests-special += \
-  $(objpfx)noload-mem.out \
   $(objpfx)tst-ldconfig-X.out \
   $(objpfx)tst-ldconfig-p.out \
   $(objpfx)tst-ldconfig-soname.out \
-  $(objpfx)tst-leaks1-mem.out \
   $(objpfx)tst-rtld-help.out \
   # tests-special
+ifeq (yes,$(build-shared))
+ifneq ($(PERL),no)
+tests-special += \
+  $(objpfx)noload-mem.out \
+  $(objpfx)tst-leaks1-mem.out \
+  # tests-special
+endif
+endif
 endif
 tlsmod17a-suffixes = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
 tlsmod18a-suffixes = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
@@ -886,6 +894,23 @@ modules-names += \
   tst-null-argv-lib \
   tst-p_alignmod-base \
   tst-p_alignmod3 \
+  tst-recursive-tlsmallocmod \
+  tst-recursive-tlsmod0 \
+  tst-recursive-tlsmod1 \
+  tst-recursive-tlsmod2 \
+  tst-recursive-tlsmod3 \
+  tst-recursive-tlsmod4 \
+  tst-recursive-tlsmod5 \
+  tst-recursive-tlsmod6 \
+  tst-recursive-tlsmod7 \
+  tst-recursive-tlsmod8 \
+  tst-recursive-tlsmod9 \
+  tst-recursive-tlsmod10 \
+  tst-recursive-tlsmod11 \
+  tst-recursive-tlsmod12 \
+  tst-recursive-tlsmod13 \
+  tst-recursive-tlsmod14 \
+  tst-recursive-tlsmod15 \
   tst-relsort1mod1 \
   tst-relsort1mod2 \
   tst-ro-dynamic-mod \
@@ -1200,7 +1225,6 @@ tests-special += \
   $(objpfx)tst-trace3.out \
   $(objpfx)tst-trace4.out \
   $(objpfx)tst-trace5.out \
-  $(objpfx)tst-tunables-enable_secure-env.out \
   $(objpfx)tst-unused-dep-cmp.out \
   $(objpfx)tst-unused-dep.out \
   # tests-special
@@ -2228,13 +2252,7 @@ $(objpfx)tst-unused-dep-cmp.out: $(objpfx)tst-unused-dep.out
 	cmp $< /dev/null > $@; \
 	$(evaluate-test)
 
-$(objpfx)tst-tunables-enable_secure-env.out: $(objpfx)tst-tunables-enable_secure-env
-	$(test-wrapper-env) \
-	GLIBC_TUNABLES=glibc.rtld.enable_secure=1 \
-	$(rtld-prefix) \
-	  $< > $@; \
-	$(evaluate-test)
-
+tst-tunables-enable_secure-env-ARGS = -- $(host-test-program-cmd)
 
 $(objpfx)tst-audit11.out: $(objpfx)tst-auditmod11.so $(objpfx)tst-audit11mod1.so
 tst-audit11-ENV = LD_AUDIT=$(objpfx)tst-auditmod11.so
@@ -3093,3 +3111,11 @@ CFLAGS-tst-gnu2-tls2mod0.c += -mtls-dialect=$(have-mtls-descriptor)
 CFLAGS-tst-gnu2-tls2mod1.c += -mtls-dialect=$(have-mtls-descriptor)
 CFLAGS-tst-gnu2-tls2mod2.c += -mtls-dialect=$(have-mtls-descriptor)
 endif
+
+$(objpfx)tst-recursive-tls: $(objpfx)tst-recursive-tlsmallocmod.so
+# More objects than DTV_SURPLUS, to trigger DTV reallocation.
+$(objpfx)tst-recursive-tls.out: \
+  $(patsubst %,$(objpfx)tst-recursive-tlsmod%.so, \
+    0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15)
+$(objpfx)tst-recursive-tlsmod%.os: tst-recursive-tlsmodN.c
+	$(compile-command.c) -DVAR=thread_$* -DFUNC=get_threadvar_$*

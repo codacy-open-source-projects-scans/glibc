@@ -788,6 +788,8 @@ init_tls (size_t naudit)
     _dl_fatal_printf ("\
 cannot allocate TLS data structures for initial thread\n");
 
+  _dl_tls_initial_modid_limit_setup ();
+
   /* Store for detection of the special case by __tls_get_addr
      so it knows not to pass this dtv to the normal realloc.  */
   GL(dl_initial_dtv) = GET_DTV (tcbp);
@@ -1325,7 +1327,7 @@ _dl_start_args_adjust (int skip_args, int skip_env)
 
   /* Shuffle auxv down. */
   ElfW(auxv_t) ax;
-  char *oldp = (char *) (p + 1);
+  char *oldp = (char *) (p + 1 + skip_env);
   char *newp = (char *) (sp + 1);
   do
     {
