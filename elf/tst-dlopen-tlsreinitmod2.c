@@ -1,4 +1,4 @@
-/* Check if exit can be called concurrently by multiple threads.
+/* Test that dlopen preserves already accessed TLS (bug 31717), module 2.
    Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -16,7 +16,15 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#define EXIT(__r)    exit (__r)
-#define ATEXIT(__f)  atexit (__f)
+#include <stdio.h>
 
-#include "tst-concurrent-exit-skeleton.c"
+/* Defined in tst-dlopen-tlsreinitmod3.so.  This an underlinked symbol
+   dependency.  */
+extern void call_tlsreinitmod3 (void);
+
+static void __attribute__ ((constructor))
+tlsreinitmod2_init (void)
+{
+  puts ("info: constructor of tst-dlopen-tlsreinitmod2.so invoked");
+  call_tlsreinitmod3 ();
+}

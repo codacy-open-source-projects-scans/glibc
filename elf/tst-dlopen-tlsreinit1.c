@@ -1,4 +1,4 @@
-/* Check if exit can be called concurrently by multiple threads.
+/* Test that dlopen preserves already accessed TLS (bug 31717).
    Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -16,7 +16,25 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#define EXIT(__r)    exit (__r)
-#define ATEXIT(__f)  atexit (__f)
+#include <stdbool.h>
+#include <support/check.h>
+#include <support/xdlfcn.h>
+#include <ctype.h>
 
-#include "tst-concurrent-exit-skeleton.c"
+static int
+do_test (void)
+{
+  void *handle = xdlopen ("tst-dlopen-tlsreinitmod1.so", RTLD_NOW);
+
+  bool *tlsreinitmod3_tested = xdlsym (handle, "tlsreinitmod3_tested");
+  TEST_VERIFY (*tlsreinitmod3_tested);
+
+  xdlclose (handle);
+
+  /* This crashes if the libc.so.6 TLS image has been reverted.  */
+  TEST_VERIFY (!isupper ('@'));
+
+  return 0;
+}
+
+#include <support/test-driver.c>
