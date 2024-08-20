@@ -988,14 +988,6 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
   if (CPU_FEATURE_USABLE_P (cpu_features, FSRM))
     rep_movsb_threshold = 2112;
 
-  /* Non-temporal stores are more performant on Intel and AMD hardware above
-     non_temporal_threshold. Enable this for both Intel and AMD hardware. */
-  unsigned long int memset_non_temporal_threshold = SIZE_MAX;
-  if (!CPU_FEATURES_ARCH_P (cpu_features, Avoid_Non_Temporal_Memset)
-      && (cpu_features->basic.kind == arch_kind_intel
-	  || cpu_features->basic.kind == arch_kind_amd))
-    memset_non_temporal_threshold = non_temporal_threshold;
-
   /* For AMD CPUs that support ERMS (Zen3+), REP MOVSB is in a lot of
      cases slower than the vectorized path (and for some alignments,
      it is really slow, check BZ #30994).  */
@@ -1016,6 +1008,13 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
   /* NB: Ignore the default value 0.  */
   if (tunable_size != 0)
     shared = tunable_size;
+
+  /* Non-temporal stores are more performant on some hardware above
+     non_temporal_threshold. Currently Prefer_Non_Temporal is set for for both
+     Intel and AMD hardware. */
+  unsigned long int memset_non_temporal_threshold = SIZE_MAX;
+  if (!CPU_FEATURES_ARCH_P (cpu_features, Avoid_Non_Temporal_Memset))
+    memset_non_temporal_threshold = non_temporal_threshold;
 
   tunable_size = TUNABLE_GET (x86_non_temporal_threshold, long int, NULL);
   if (tunable_size > minimum_non_temporal_threshold
@@ -1042,18 +1041,42 @@ dl_init_cacheinfo (struct cpu_features *cpu_features)
        slightly better than ERMS.  */
     rep_stosb_threshold = SIZE_MAX;
 
+  /*
+     For memset, the non-temporal implementation is only accessed through the
+     stosb code. ie:
+     ```
+     if (size >= rep_stosb_thresh)
+     {
+    	if (size >= non_temporal_thresh)
+     {
+     do_non_temporal ();
+     }
+    	do_stosb ();
+     }
+     do_normal_vec_loop ();
+     ```
+     So if we prefer non-temporal, set `rep_stosb_thresh = non_temporal_thresh`
+     to enable the implementation. If `rep_stosb_thresh = non_temporal_thresh`,
+    `rep stosb` will never be used.
+   */
+  TUNABLE_SET_WITH_BOUNDS (x86_memset_non_temporal_threshold,
+			   memset_non_temporal_threshold,
+			   minimum_non_temporal_threshold, SIZE_MAX);
+  /* Do `rep_stosb_thresh = non_temporal_thresh` after setting/getting the
+     final value of `x86_memset_non_temporal_threshold`. In some cases this can
+     be a matter of correctness.  */
+  if (CPU_FEATURES_ARCH_P (cpu_features, Avoid_STOSB))
+    rep_stosb_threshold
+	= TUNABLE_GET (x86_memset_non_temporal_threshold, long int, NULL);
+  TUNABLE_SET_WITH_BOUNDS (x86_rep_stosb_threshold, rep_stosb_threshold, 1,
+			   SIZE_MAX);
   TUNABLE_SET_WITH_BOUNDS (x86_data_cache_size, data, 0, SIZE_MAX);
   TUNABLE_SET_WITH_BOUNDS (x86_shared_cache_size, shared, 0, SIZE_MAX);
   TUNABLE_SET_WITH_BOUNDS (x86_non_temporal_threshold, non_temporal_threshold,
 			   minimum_non_temporal_threshold,
 			   maximum_non_temporal_threshold);
-  TUNABLE_SET_WITH_BOUNDS (x86_memset_non_temporal_threshold,
-			   memset_non_temporal_threshold,
-			   minimum_non_temporal_threshold, SIZE_MAX);
   TUNABLE_SET_WITH_BOUNDS (x86_rep_movsb_threshold, rep_movsb_threshold,
 			   minimum_rep_movsb_threshold, SIZE_MAX);
-  TUNABLE_SET_WITH_BOUNDS (x86_rep_stosb_threshold, rep_stosb_threshold, 1,
-			   SIZE_MAX);
 
   unsigned long int rep_movsb_stop_threshold;
   /* Setting the upper bound of ERMS to the computed value of

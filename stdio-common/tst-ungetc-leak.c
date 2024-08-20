@@ -1,5 +1,5 @@
-/* Function descriptors. Generic version.
-   Copyright (C) 1995-2024 Free Software Foundation, Inc.
+/* Test for memory leak with ungetc when stream is unused.
+   Copyright The GNU Toolchain Authors.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,30 +16,17 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#ifndef dl_fptr_h
-#define dl_fptr_h 1
+#include <stdio.h>
+#include <mcheck.h>
+#include <support/check.h>
+#include <support/support.h>
 
-/* An FDESC is a function descriptor.  */
+static int
+do_test (void)
+{
+  mtrace ();
+  TEST_COMPARE (ungetc('y', stdin), 'y');
+  return 0;
+}
 
-struct fdesc
-  {
-    ElfW(Addr) ip;	/* code entry point */
-    ElfW(Addr) gp;	/* global pointer */
-  };
-
-struct fdesc_table
-  {
-    struct fdesc_table *next;
-    unsigned int len;			/* # of entries in fdesc table */
-    volatile unsigned int first_unused;	/* index of first available entry */
-    struct fdesc fdesc[0];
-  };
-
-struct link_map;
-
-extern ElfW(Addr) _dl_boot_fptr_table [];
-
-extern ElfW(Addr) _dl_make_fptr (struct link_map *, const ElfW(Sym) *,
-				 ElfW(Addr));
-
-#endif /* !dl_fptr_h */
+#include <support/test-driver.c>
