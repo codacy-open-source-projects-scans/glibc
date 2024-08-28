@@ -756,9 +756,9 @@ init_cpu_features (struct cpu_features *cpu_features)
   unsigned int stepping = 0;
   enum cpu_features_kind kind;
 
-  /* Default is avoid non-temporal memset for non Intel/AMD hardware. This is,
+  /* Default is avoid non-temporal memset for non Intel/AMD/Hygon hardware. This is,
      as of writing this, we only have benchmarks indicatings it profitability
-     on Intel/AMD.  */
+     on Intel/AMD/Hygon.  */
   cpu_features->preferred[index_arch_Avoid_Non_Temporal_Memset]
       |= bit_arch_Avoid_Non_Temporal_Memset;
 
@@ -986,9 +986,8 @@ https://www.intel.com/content/www/us/en/support/articles/000059422/processors.ht
 	cpu_features->preferred[index_arch_Avoid_Short_Distance_REP_MOVSB]
 	  |= bit_arch_Avoid_Short_Distance_REP_MOVSB;
     }
-  /* This spells out "AuthenticAMD" or "HygonGenuine".  */
-  else if ((ebx == 0x68747541 && ecx == 0x444d4163 && edx == 0x69746e65)
-	   || (ebx == 0x6f677948 && ecx == 0x656e6975 && edx == 0x6e65476e))
+  /* This spells out "AuthenticAMD".  */
+  else if (ebx == 0x68747541 && ecx == 0x444d4163 && edx == 0x69746e65)
     {
       unsigned int extended_model;
 
@@ -1103,6 +1102,25 @@ https://www.intel.com/content/www/us/en/support/articles/000059422/processors.ht
 	      break;
 	    }
 	}
+    }
+  /* This spells out "HygonGenuine".  */
+  else if (ebx == 0x6f677948 && ecx == 0x656e6975 && edx == 0x6e65476e)
+    {
+      unsigned int extended_model;
+
+      kind = arch_kind_hygon;
+
+      get_common_indices (cpu_features, &family, &model, &extended_model,
+			  &stepping);
+
+      get_extended_indices (cpu_features);
+
+      update_active (cpu_features);
+
+      /* Benchmarks indicate non-temporal memset can be profitable on Hygon
+       hardware.  */
+      cpu_features->preferred[index_arch_Avoid_Non_Temporal_Memset]
+	    &= ~bit_arch_Avoid_Non_Temporal_Memset;
     }
   else
     {
