@@ -1,5 +1,5 @@
-/* Register aliases for memset to be used across implementations.
-   Copyright (C) 2017-2024 Free Software Foundation, Inc.
+/* Test using fclose on an unopened file.
+   Copyright (C) 2024 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,15 +16,25 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#define dstin	x0
-#define val	x1
-#define valw	w1
-#define count	x2
-#define dst	x3
-#define dstend	x4
-#define tmp1	x5
-#define tmp1w	w5
-#define tmp2	x6
-#define tmp2w	w6
-#define zva_len x7
-#define zva_lenw w7
+#include <stdio.h>
+#include <support/check.h>
+
+/* Verify that fclose on an unopened file returns EOF.  This is not part
+   of the fclose external contract but there are dependancies on this
+   behaviour.  */
+
+static int
+do_test (void)
+{
+  TEST_COMPARE (fclose (stdin), 0);
+
+  /* Attempt to close the unopened file and verify that EOF is returned.
+     Calling fclose on a file twice normally causes a use-after-free bug,
+     however the standard streams are an exception since they are not
+     deallocated by fclose.  */
+  TEST_COMPARE (fclose (stdin), EOF);
+
+  return 0;
+}
+
+#include <support/test-driver.c>

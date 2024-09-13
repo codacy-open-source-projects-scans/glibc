@@ -308,9 +308,7 @@ do_test (void)
   TEST_VERIFY_EXIT (fp != NULL);
   ret = fcntl (fileno (fp), F_GETFD);
   TEST_VERIFY (ret != -1);
-#if 0 /* Fails to clear FD_CLOEXEC (bug 32134).  */
   TEST_COMPARE (ret & FD_CLOEXEC, 0);
-#endif
   TEST_COMPARE_FILE_STRING (fp, "plustomore");
   xfclose (fp);
   END_TEST;
@@ -388,13 +386,8 @@ do_test (void)
   fp = xfopen (file2, "w,ccs=iso-8859-1");
   ret = fputws (L"\xc0\xc1", fp);
   TEST_VERIFY (ret >= 0);
-#if 0 /* Doesn't work (bug 23675).  */
   fp = FREOPEN (file1, "r,ccs=utf-8", fp);
   TEST_VERIFY_EXIT (fp != NULL);
-#else /* Works instead.  */
-  xfclose (fp);
-  fp = xfopen (file1, "r,ccs=utf-8");
-#endif
   wc = fgetwc (fp);
   TEST_COMPARE (wc, (wint_t) 0xc0);
   wc = fgetwc (fp);
