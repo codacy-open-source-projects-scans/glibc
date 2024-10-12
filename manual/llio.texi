@@ -1381,6 +1381,19 @@ Per-IO synchronization as if the file was opened with @code{O_APPEND} flag.
 @item RWF_NOAPPEND
 This flag allows an offset to be honored, even if the file was opened with
 @code{O_APPEND} flag.
+
+@item RWF_ATOMIC
+Indicate that the write is to be issued with torn-write prevention.  The
+input buffer should follow some contraints: the total length should be
+power-of-2 in size and also sizes between @code{atomic_write_unit_min}
+and @code{atomic_write_unit_max}, the @code{struct iovec} count should be
+up to @code{atomic_write_segments_max}, and the offset should be
+naturally-aligned with regard to total write length.
+
+The @code{atomic_*} values can be obtained with @code{statx} along with
+@code{STATX_WRITE_ATOMIC} flag.
+
+This is a Linux-specific extension.
 @end vtable
 
 When the source file is compiled with @code{_FILE_OFFSET_BITS == 64} the
@@ -1761,6 +1774,15 @@ This is a special flag for DAX devices, which tells the kernel to
 write dirty metadata out whenever dirty data is written out.  Unlike
 most other flags, this one will fail unless @code{MAP_SHARED_VALIDATE}
 is also given.
+
+@item MAP_DROPPABLE
+Request the page to be never written out to swap, it will be zeroed
+under memory pressure (so kernel can just drop the page), it is inherited
+by fork, it is not counted against @code{mlock} budget, and if there is
+not enough memory to service a page fault there is no fatal error (so no
+signal is sent).
+
+The @code{MAP_DROPPABLE} flag is specific to Linux.
 
 @end vtable
 
@@ -4831,12 +4853,12 @@ of an IOCTL, see @ref{Out-of-Band Data}.
 @manpagefunctionstub{poll,2}
 @end deftypefun
 
-@deftypefun int epoll_create(int @var{size})
+@deftypefun int epoll_create (int @var{size})
 
 @manpagefunctionstub{epoll_create,2}
 @end deftypefun
 
-@deftypefun int epoll_wait(int @var{epfd}, struct epoll_event *@var{events}, int @var{maxevents}, int @var{timeout})
+@deftypefun int epoll_wait (int @var{epfd}, struct epoll_event *@var{events}, int @var{maxevents}, int @var{timeout})
 
 @manpagefunctionstub{epoll_wait,2}
 @end deftypefun
