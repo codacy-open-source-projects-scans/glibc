@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # Build many configurations of glibc.
-# Copyright (C) 2016-2024 Free Software Foundation, Inc.
+# Copyright (C) 2016-2025 Free Software Foundation, Inc.
 # Copyright The GNU Toolchain Authors.
 # This file is part of the GNU C Library.
 #
@@ -107,7 +107,7 @@ class Context(object):
     """The global state associated with builds in a given directory."""
 
     def __init__(self, topdir, parallelism, keep, replace_sources, strip,
-                 full_gcc, action, shallow=False):
+                 full_gcc, action, exclude, shallow=False):
         """Initialize the context."""
         self.topdir = topdir
         self.parallelism = parallelism
@@ -115,6 +115,7 @@ class Context(object):
         self.replace_sources = replace_sources
         self.strip = strip
         self.full_gcc = full_gcc
+        self.exclude = exclude
         self.shallow = shallow
         self.srcdir = os.path.join(topdir, 'src')
         self.versions_json = os.path.join(self.srcdir, 'versions.json')
@@ -232,13 +233,11 @@ class Context(object):
         self.add_config(arch='i686',
                         os_name='gnu')
         self.add_config(arch='loongarch64',
-                        os_name='linux-gnu',
-                        variant='lp64d',
-                        gcc_cfg=['--with-abi=lp64d','--disable-multilib'])
+                        os_name='linux-gnuf64',
+                        gcc_cfg=['--disable-multilib'])
         self.add_config(arch='loongarch64',
-                        os_name='linux-gnu',
-                        variant='lp64s',
-                        gcc_cfg=['--with-abi=lp64s','--disable-multilib'])
+                        os_name='linux-gnusf',
+                        gcc_cfg=['--disable-multilib'])
         self.add_config(arch='m68k',
                         os_name='linux-gnu',
                         gcc_cfg=['--disable-multilib'])
@@ -354,9 +353,6 @@ class Context(object):
                                  'ccopts': '-mabi=32'},
                                 {'variant': 'n64',
                                  'ccopts': '-mabi=64'}])
-        self.add_config(arch='nios2',
-                        os_name='linux-gnu',
-                        gcc_cfg=['--enable-obsolete'])
         self.add_config(arch='or1k',
                         os_name='linux-gnu',
                         gcc_cfg=['--with-multilib-list=mcmov,mhard-float'],
@@ -505,6 +501,8 @@ class Context(object):
     def add_config(self, **args):
         """Add an individual build configuration."""
         cfg = Config(self, **args)
+        if self.exclude and cfg.name in self.exclude:
+            return
         if cfg.name in self.configs:
             print('error: duplicate config %s' % cfg.name)
             exit(1)
@@ -742,7 +740,13 @@ class Context(object):
         logsdir = os.path.join(self.logsdir, 'host-libraries')
         self.remove_recreate_dirs(installdir, builddir, logsdir)
         cmdlist = CommandList('host-libraries', self.keep)
-        self.build_host_library(cmdlist, 'gmp')
+        # This CFLAGS setting works around GMP 6.3.0's configure
+        # script being incompatible with compilers defaulting to C23
+        # and should be removed when this script is updated to use a
+        # release of GMP from after that configure test was fixed in
+        # Jan 2025.
+        self.build_host_library(cmdlist, 'gmp',
+                                ['CFLAGS=-Wall -O2 -std=gnu17'])
         self.build_host_library(cmdlist, 'mpfr',
                                 ['--with-gmp=%s' % installdir])
         self.build_host_library(cmdlist, 'mpc',
@@ -827,13 +831,13 @@ class Context(object):
 
     def checkout(self, versions):
         """Check out the desired component versions."""
-        default_versions = {'binutils': 'vcs-2.43',
-                            'gcc': 'vcs-13',
+        default_versions = {'binutils': 'vcs-2.45',
+                            'gcc': 'vcs-15',
                             'glibc': 'vcs-mainline',
                             'gmp': '6.3.0',
-                            'linux': '6.11',
+                            'linux': '6.17',
                             'mpc': '1.3.1',
-                            'mpfr': '4.2.1',
+                            'mpfr': '4.2.2',
                             'mig': 'vcs-mainline',
                             'gnumach': 'vcs-mainline',
                             'hurd': 'vcs-mainline'}
@@ -1321,7 +1325,6 @@ def install_linux_headers(policy, cmdlist):
                 'm68k': 'm68k',
                 'microblaze': 'microblaze',
                 'mips': 'mips',
-                'nios2': 'nios2',
                 'or1k': 'openrisc',
                 'powerpc': 'powerpc',
                 's390': 's390',
@@ -1888,6 +1891,8 @@ def get_parser():
                         help='Build GCC with all languages and libsanitizer')
     parser.add_argument('--shallow', action='store_true',
                         help='Do not download Git history during checkout')
+    parser.add_argument('--exclude', dest='exclude',
+                        help='Targets to be excluded', nargs='*')
     parser.add_argument('topdir',
                         help='Toplevel working directory')
     parser.add_argument('action',
@@ -1982,7 +1987,7 @@ def main(argv):
     opts = parser.parse_args(argv)
     topdir = os.path.abspath(opts.topdir)
     ctx = Context(topdir, opts.parallelism, opts.keep, opts.replace_sources,
-                  opts.strip, opts.full_gcc, opts.action,
+                  opts.strip, opts.full_gcc, opts.action, opts.exclude,
                   shallow=opts.shallow)
     ctx.run_builds(opts.action, opts.configs)
 

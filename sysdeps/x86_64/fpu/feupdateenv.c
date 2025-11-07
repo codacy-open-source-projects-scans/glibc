@@ -1,5 +1,5 @@
 /* Install given floating-point environment and raise exceptions.
-   Copyright (C) 1997-2024 Free Software Foundation, Inc.
+   Copyright (C) 1997-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@ __feupdateenv (const fenv_t *envp)
   unsigned int xtemp;
 
   /* Save current exceptions.  */
-  __asm__ ("fnstsw %0\n\tstmxcsr %1" : "=m" (*&temp), "=m" (xtemp));
+  __asm__ ("fnstsw %0\n\t%vstmxcsr %1" : "=m" (temp), "=m" (xtemp));
   temp = (temp | xtemp) & FE_ALL_EXCEPT;
 
   /* Install new environment.  */

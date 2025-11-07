@@ -1,5 +1,5 @@
 /* Internal definitions for pthreads library.
-   Copyright (C) 2000-2024 Free Software Foundation, Inc.
+   Copyright (C) 2000-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -172,6 +172,7 @@ extern int __pthread_concurrency;
 
 /* The size of the thread ID lookup table.  */
 extern int __pthread_max_threads;
+libc_hidden_proto (__pthread_max_threads)
 
 #define __pthread_getid(thread) \
   ({ struct __pthread *__t = NULL;                                           \
@@ -209,6 +210,7 @@ extern int __pthread_create_internal (struct __pthread **__restrict pthread,
 /* Allocate a new thread structure and a pthread thread ID (but not a
    kernel thread or a stack).  THREAD has one reference.  */
 extern int __pthread_alloc (struct __pthread **thread);
+libc_hidden_proto (__pthread_alloc)
 
 /* Deallocate the content of the thread structure.  This is the dual of
    __pthread_alloc (N.B. it does not call __pthread_stack_dealloc nor
@@ -217,15 +219,17 @@ extern int __pthread_alloc (struct __pthread **thread);
    to call __pthread_dealloc_finish when it is really finished with using
    THREAD.  */
 extern void __pthread_dealloc (struct __pthread *thread);
+libc_hidden_proto (__pthread_dealloc)
 
 /* Confirm deallocating the thread structure.  Before calling this
    the structure will not be reused yet.  */
 extern void __pthread_dealloc_finish (struct __pthread *pthread);
-
+libc_hidden_proto (__pthread_dealloc_finish)
 
 /* Allocate a stack of size STACKSIZE.  The stack base shall be
    returned in *STACKADDR.  */
 extern int __pthread_stack_alloc (void **stackaddr, size_t stacksize);
+libc_hidden_proto (__pthread_stack_alloc)
 
 /* Deallocate the stack STACKADDR of size STACKSIZE.  */
 extern void __pthread_stack_dealloc (void *stackaddr, size_t stacksize);
@@ -238,14 +242,16 @@ extern int __pthread_setup (struct __pthread *__restrict thread,
 						 void *),
 			    void *(*start_routine) (void *),
 			    void *__restrict arg);
-
+libc_hidden_proto (__pthread_setup)
 
 /* Allocate a kernel thread (and any miscellaneous system dependent
    resources) for THREAD; it must not be placed on the run queue.  */
 extern int __pthread_thread_alloc (struct __pthread *thread);
+libc_hidden_proto (__pthread_thread_alloc)
 
 /* Start THREAD making it eligible to run.  */
 extern int __pthread_thread_start (struct __pthread *thread);
+libc_hidden_proto (__pthread_thread_start)
 
 /* Terminate the kernel thread associated with THREAD, and deallocate its
    stack as well as any other kernel resource associated with it.
@@ -259,31 +265,34 @@ extern int __pthread_thread_start (struct __pthread *thread);
    has started, no other thread can terminate it, so that thread-local
    variables created by that thread are correctly released.  */
 extern void __pthread_thread_terminate (struct __pthread *thread);
-
+libc_hidden_proto (__pthread_thread_terminate)
 
 /* Called by a thread just before it calls the provided start
    routine.  */
 extern void __pthread_startup (void);
+libc_hidden_proto (__pthread_startup)
 
 /* Block THREAD.  */
 extern void __pthread_block (struct __pthread *thread);
+libc_hidden_proto (__pthread_block)
 
 /* Block THREAD until *ABSTIME is reached.  */
 extern error_t __pthread_timedblock (struct __pthread *__restrict thread,
 				     const struct timespec *__restrict abstime,
 				     clockid_t clock_id);
-
+libc_hidden_proto (__pthread_timedblock)
 /* Block THREAD with interrupts.  */
 extern error_t __pthread_block_intr (struct __pthread *thread);
+libc_hidden_proto (__pthread_block_intr)
 
 /* Block THREAD until *ABSTIME is reached, with interrupts.  */
 extern error_t __pthread_timedblock_intr (struct __pthread *__restrict thread,
 					  const struct timespec *__restrict abstime,
 					  clockid_t clock_id);
-
+libc_hidden_proto (__pthread_timedblock_intr)
 /* Wakeup THREAD.  */
 extern void __pthread_wakeup (struct __pthread *thread);
-
+libc_hidden_proto (__pthread_wakeup)
 
 /* Perform a cancelation.  The CANCEL_LOCK member of the given thread must
    be locked before calling this function, which must unlock it.  */
@@ -297,28 +306,34 @@ extern error_t __pthread_init_specific (struct __pthread *thread);
 /* Call the destructors on all of the thread specific data in THREAD.
    THREAD must be the calling thread.  */
 extern void __pthread_destroy_specific (struct __pthread *thread);
+libc_hidden_proto (__pthread_destroy_specific)
 
 
 /* Initialize newly create thread *THREAD's signal state data
    structures.  */
 extern error_t __pthread_sigstate_init (struct __pthread *thread);
+libc_hidden_proto (__pthread_sigstate_init)
 
 /* Destroy the signal state data structures associated with thread
    *THREAD.  */
 extern void __pthread_sigstate_destroy (struct __pthread *thread);
+libc_hidden_proto (__pthread_sigstate_destroy)
 
 /* Modify thread *THREAD's signal state.  */
 extern error_t __pthread_sigstate (struct __pthread *__restrict thread, int how,
 				   const sigset_t *__restrict set,
 				   sigset_t *__restrict oset,
 				   int clear_pending);
+libc_hidden_proto (__pthread_sigstate)
 
 /* If supported, check that MUTEX is locked by the caller.  */
 extern int __pthread_mutex_checklocked (pthread_mutex_t *mtx);
+libc_hidden_proto (__pthread_mutex_checklocked)
 
 
 /* Default thread attributes.  */
 extern struct __pthread_attr __pthread_default_attr;
+libc_hidden_proto (__pthread_default_attr)
 
 /* Default barrier attributes.  */
 extern const struct __pthread_barrierattr __pthread_default_barrierattr;
@@ -328,6 +343,7 @@ extern const struct __pthread_rwlockattr __pthread_default_rwlockattr;
 
 /* Default condition attributes.  */
 extern const struct __pthread_condattr __pthread_default_condattr;
+libc_hidden_proto (__pthread_default_condattr)
 
 /* Semaphore encoding.
    See nptl implementation for the details.  */

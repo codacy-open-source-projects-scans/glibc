@@ -1,5 +1,5 @@
 /* Support for dynamic linking code in static libc.
-   Copyright (C) 1996-2024 Free Software Foundation, Inc.
+   Copyright (C) 1996-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -35,7 +35,6 @@
 #include <dl-machine.h>
 #include <libc-lock.h>
 #include <dl-cache.h>
-#include <dl-procinfo.h>
 #include <unsecvars.h>
 #include <hp-timing.h>
 #include <stackinfo.h>
@@ -45,6 +44,7 @@
 #include <dl-find_object.h>
 #include <array_length.h>
 #include <dl-symbol-redir-ifunc.h>
+#include <dl-tunables.h>
 
 extern char *__progname;
 char **_dl_argv = &__progname;	/* This is checked for some error messages.  */
@@ -166,9 +166,8 @@ enum dso_sort_algorithm _dl_dso_sort_algo;
 /* The value of the FPU control word the kernel will preset in hardware.  */
 fpu_control_t _dl_fpu_control = _FPU_DEFAULT;
 
-/* Prevailing state of the stack.  Generally this includes PF_X, indicating it's
- * executable but this isn't true for all platforms.  */
-ElfW(Word) _dl_stack_flags = DEFAULT_STACK_PERMS;
+/* Required flags used for stack allocation.  */
+int _dl_stack_prot_flags = DEFAULT_STACK_PROT_PERMS;
 
 #if PTHREAD_IN_LIBC
 list_t _dl_stack_used;
@@ -178,10 +177,6 @@ size_t _dl_stack_cache_actsize;
 uintptr_t _dl_in_flight_stack;
 int _dl_stack_cache_lock;
 #else
-/* If loading a shared object requires that we make the stack executable
-   when it was not, we do it by calling this function.
-   It returns an errno code or zero on success.  */
-int (*_dl_make_stack_executable_hook) (void **) = _dl_make_stack_executable;
 void (*_dl_init_static_tls) (struct link_map *) = &_dl_nothread_init_static_tls;
 #endif
 struct dl_scope_free_list *_dl_scope_free_list;
@@ -326,7 +321,7 @@ _dl_non_dynamic_init (void)
       {
       /* Check if the stack is nonexecutable.  */
       case PT_GNU_STACK:
-	_dl_stack_flags = ph->p_flags;
+	_dl_stack_prot_flags = pf_to_prot (ph->p_flags);
 	break;
 
       case PT_GNU_RELRO:
@@ -335,11 +330,12 @@ _dl_non_dynamic_init (void)
 	break;
       }
 
+  _dl_handle_execstack_tunable ();
+
   call_function_static_weak (_dl_find_object_init);
 
   /* Setup relro on the binary itself.  */
-  if (_dl_main_map.l_relro_size != 0)
-    _dl_protect_relro (&_dl_main_map);
+  _dl_protect_relro (&_dl_main_map);
 }
 
 #ifdef DL_SYSINFO_IMPLEMENTATION

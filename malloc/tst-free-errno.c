@@ -1,5 +1,5 @@
 /* Test that free preserves errno.
-   Copyright (C) 2020-2024 Free Software Foundation, Inc.
+   Copyright (C) 2020-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -88,7 +88,7 @@ do_test (void)
 	FAIL_EXIT1 ("cannot create temporary file");
 
       /* Do a large memory allocation.  */
-      size_t big_size = 0x1000000;
+      size_t big_size = 0x3000000;
       void * volatile ptr = xmalloc (big_size - 0x100);
       char *ptr_aligned = (char *) ((uintptr_t) ptr & ~(pagesize - 1));
       /* This large memory allocation allocated a memory area

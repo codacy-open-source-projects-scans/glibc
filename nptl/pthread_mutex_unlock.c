@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2024 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -319,7 +319,7 @@ __pthread_mutex_unlock_full (pthread_mutex_t *mutex, int decr)
       if (mutex->__data.__owner != THREAD_GETMEM (THREAD_SELF, tid)
 	  || (mutex->__data.__lock & ~ PTHREAD_MUTEX_PRIO_CEILING_MASK) == 0)
 	return EPERM;
-      /* FALLTHROUGH */
+      [[fallthrough]];
 
     case PTHREAD_MUTEX_PP_NORMAL_NP:
     case PTHREAD_MUTEX_PP_ADAPTIVE_NP:

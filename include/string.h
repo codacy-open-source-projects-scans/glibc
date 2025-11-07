@@ -128,10 +128,19 @@ void __explicit_bzero_chk_internal (void *, size_t, size_t)
   __THROW __nonnull ((1)) attribute_hidden;
 # define explicit_bzero(buf, len) \
   __explicit_bzero_chk_internal (buf, len, __glibc_objsize0 (buf))
+/* Avoid hidden reference to IFUNC symbol __memset_explicit_chk.  */
+void *__memset_explicit_chk_internal (void *, int, size_t, size_t)
+  __THROW __nonnull ((1)) attribute_hidden;
+# define memset_explicit(buf, c, len)					\
+  __memset_explicit_chk_internal (buf, c, len, __glibc_objsize0 (buf))
 #elif !IS_IN (nonlib)
 void __explicit_bzero_chk (void *, size_t, size_t) __THROW __nonnull ((1));
 # define explicit_bzero(buf, len) __explicit_bzero_chk (buf, len,	      \
 							__glibc_objsize0 (buf))
+void *__memset_explicit_chk (void *, int, size_t, size_t)
+  __THROW __nonnull ((1));
+# define memset_explicit(buf, c, len)				\
+  __memset_explicit_chk (buf, c, len, __glibc_objsize0 (buf))
 #endif
 
 libc_hidden_builtin_proto (memchr)
@@ -175,7 +184,7 @@ extern __typeof (strnlen) strnlen attribute_hidden;
 extern __typeof (strsep) strsep attribute_hidden;
 #endif
 
-#if (!IS_IN (libc) || !defined SHARED) \
+#if (IS_IN (libc) || IS_IN (libpthread)) && !defined SHARED \
   && !defined NO_MEMPCPY_STPCPY_REDIRECT
 /* Redirect calls to __builtin_mempcpy and __builtin_stpcpy to call
    __mempcpy and __stpcpy if not inlined.  */

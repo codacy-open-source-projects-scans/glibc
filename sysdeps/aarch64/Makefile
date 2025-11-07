@@ -1,15 +1,9 @@
 long-double-fcts = yes
 
-ifeq (yes,$(aarch64-bti))
-# Mark linker output BTI compatible, it warns on non-BTI inputs.
-sysdep-LDFLAGS += -Wl,-z,force-bti
-# Make warnings fatal outside the test system.
-LDFLAGS-lib.so += -Wl,--fatal-warnings
-LDFLAGS-rtld += -Wl,-z,force-bti,--fatal-warnings
-endif
-
 ifeq ($(subdir),elf)
-sysdep-dl-routines += dl-bti
+sysdep-dl-routines += \
+  dl-bti \
+  dl-gcs
 
 tests += tst-audit26 \
 	 tst-audit27
@@ -35,16 +29,21 @@ endif
 ifeq ($(subdir),elf)
 sysdep-rtld-routines += dl-start
 sysdep-dl-routines += tlsdesc dl-tlsdesc
-gen-as-const-headers += dl-link.sym
+gen-as-const-headers += \
+  dl-link.sym \
+  rtld-global-offsets.sym
 
-tests-internal += tst-ifunc-arg-1 tst-ifunc-arg-2
+tests-internal += \
+  tst-ifunc-arg-1 \
+  tst-ifunc-arg-2 \
+  tst-ifunc-arg-3 \
+  tst-ifunc-arg-4 \
+  # tests-internal
 
-ifeq (yes,$(aarch64-variant-pcs))
 tests += tst-vpcs
 modules-names += tst-vpcs-mod
 LDFLAGS-tst-vpcs-mod.so = -Wl,-z,lazy
 $(objpfx)tst-vpcs: $(objpfx)tst-vpcs-mod.so
-endif
 endif
 
 ifeq ($(subdir),csu)
@@ -67,10 +66,23 @@ sysdep_headers += sys/ifunc.h
 sysdep_routines += \
   __mtag_tag_zero_region \
   __mtag_tag_region \
-  __arm_za_disable
+  __arm_za_disable \
+  __alloc_gcs
 
 tests += \
-  tst-sme-jmp
+  tst-sme-jmp \
+  tst-sme-signal \
+  tst-sme-za-state \
+  # tests
+tests-internal += \
+  tst-sme-clone \
+  tst-sme-clone3 \
+  tst-sme-fork \
+  tst-sme-vfork \
+  # tests-internal
+
+$(objpfx)tst-sme-clone3: $(objpfx)clone3.o $(objpfx)__arm_za_disable.o
+
 endif
 
 ifeq ($(subdir),malloc)

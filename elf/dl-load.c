@@ -1,5 +1,5 @@
 /* Map in a shared object's segments from the file.
-   Copyright (C) 1995-2024 Free Software Foundation, Inc.
+   Copyright (C) 1995-2025 Free Software Foundation, Inc.
    Copyright The GNU Toolchain Authors.
    This file is part of the GNU C Library.
 
@@ -32,6 +32,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <gnu/lib-names.h>
+#include <dl-tunables.h>
 
 /* Type for the buffer we put the ELF header and hopefully the program
    header.  This buffer does not really have to be too large.  In most
@@ -755,7 +756,7 @@ _dl_init_paths (const char *llp, const char *source,
   l = GL(dl_ns)[LM_ID_BASE]._ns_loaded;
 #ifdef SHARED
   if (l == NULL)
-    l = &GL (dl_rtld_map);
+    l = &_dl_rtld_map;
 #endif
   assert (l->l_type != lt_loaded);
 
@@ -902,6 +903,36 @@ _dl_process_pt_gnu_property (struct link_map *l, int fd, const ElfW(Phdr) *ph)
     }
 }
 
+static void
+_dl_notify_new_object (int mode, Lmid_t nsid, struct link_map *l)
+{
+  /* Signal that we are going to add new objects.  */
+  struct r_debug *r = _dl_debug_update (nsid);
+  if (r->r_state == RT_CONSISTENT)
+    {
+#ifdef SHARED
+      /* Auditing checkpoint: we are going to add new objects.  Since this
+         is called after _dl_add_to_namespace_list the namespace is guaranteed
+	 to not be empty.  */
+      if ((mode & __RTLD_AUDIT) == 0)
+	_dl_audit_activity_nsid (nsid, LA_ACT_ADD);
+#endif
+
+      /* Notify the debugger we have added some objects.  We need to
+	 call _dl_debug_initialize in a static program in case dynamic
+	 linking has not been used before.  */
+      _dl_debug_change_state (r, RT_ADD);
+      LIBC_PROBE (map_start, 2, nsid, r);
+    }
+  else
+    assert (r->r_state == RT_ADD);
+
+#ifdef SHARED
+  /* Auditing checkpoint: we have a new object.  */
+  if (!GL(dl_ns)[l->l_ns]._ns_loaded->l_auditing)
+    _dl_audit_objopen (l, nsid);
+#endif
+}
 
 /* Map in the shared object NAME, actually located in REALNAME, and already
    opened on FD.  */
@@ -913,7 +944,7 @@ struct link_map *
 _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 			struct filebuf *fbp, char *realname,
 			struct link_map *loader, int l_type, int mode,
-			void **stack_endp, Lmid_t nsid)
+			const void *stack_endp, Lmid_t nsid)
 {
   struct link_map *l = NULL;
   const ElfW(Ehdr) *header;
@@ -933,6 +964,12 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
     {
       assert (nsid == LM_ID_BASE);
       memset (&id, 0, sizeof (id));
+      char *realname_can = _dl_canonicalize (fd);
+      if (realname_can != NULL)
+	{
+	  free (realname);
+	  realname = realname_can;
+	}
     }
   else
     {
@@ -979,8 +1016,8 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
   /* When loading into a namespace other than the base one we must
      avoid loading ld.so since there can only be one copy.  Ever.  */
   if (__glibc_unlikely (nsid != LM_ID_BASE)
-      && (_dl_file_id_match_p (&id, &GL(dl_rtld_map).l_file_id)
-	  || _dl_name_match_p (name, &GL(dl_rtld_map))))
+      && (_dl_file_id_match_p (&id, &_dl_rtld_map.l_file_id)
+	  || _dl_name_match_p (name, &_dl_rtld_map)))
     {
       /* This is indeed ld.so.  Create a new link_map which refers to
 	 the real one for almost everything.  */
@@ -989,7 +1026,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 	goto fail_new;
 
       /* Refer to the real descriptor.  */
-      l->l_real = &GL(dl_rtld_map);
+      l->l_real = &_dl_rtld_map;
 
       /* Copy l_addr and l_ld to avoid a GDB warning with dlmopen().  */
       l->l_addr = l->l_real->l_addr;
@@ -1001,6 +1038,8 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 
       /* Add the map for the mirrored object to the object list.  */
       _dl_add_to_namespace_list (l, nsid);
+
+      _dl_notify_new_object (mode, nsid, l);
 
       return l;
     }
@@ -1056,7 +1095,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
    /* On most platforms presume that PT_GNU_STACK is absent and the stack is
     * executable.  Other platforms default to a nonexecutable stack and don't
     * need PT_GNU_STACK to do so.  */
-   unsigned int stack_flags = DEFAULT_STACK_PERMS;
+   unsigned int stack_flags = DEFAULT_STACK_PROT_PERMS;
 
   {
     /* Scan the program header table, collecting its load commands.  */
@@ -1122,7 +1161,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 	     ‘(((char *)loadcmds.113_68 + _933 + 16))[329406144173384849].mapend’ may be used uninitialized [-Wmaybe-uninitialized]
 	     See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=106008
 	   */
-	  DIAG_IGNORE_NEEDS_COMMENT (11, "-Wmaybe-uninitialized");
+	  DIAG_IGNORE_NEEDS_COMMENT_GCC (11, "-Wmaybe-uninitialized");
 #endif
 	  /* Determine whether there is a gap between the last segment
 	     and this one.  */
@@ -1131,18 +1170,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 	  DIAG_POP_NEEDS_COMMENT;
 
 	  /* Optimize a common case.  */
-#if (PF_R | PF_W | PF_X) == 7 && (PROT_READ | PROT_WRITE | PROT_EXEC) == 7
-	  c->prot = (PF_TO_PROT
-		     >> ((ph->p_flags & (PF_R | PF_W | PF_X)) * 4)) & 0xf;
-#else
-	  c->prot = 0;
-	  if (ph->p_flags & PF_R)
-	    c->prot |= PROT_READ;
-	  if (ph->p_flags & PF_W)
-	    c->prot |= PROT_WRITE;
-	  if (ph->p_flags & PF_X)
-	    c->prot |= PROT_EXEC;
-#endif
+	  c->prot = pf_to_prot (ph->p_flags);
 	  break;
 
 	case PT_TLS:
@@ -1179,7 +1207,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 	  break;
 
 	case PT_GNU_STACK:
-	  stack_flags = ph->p_flags;
+	  stack_flags = pf_to_prot (ph->p_flags);
 	  break;
 
 	case PT_GNU_RELRO:
@@ -1215,7 +1243,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
       }
 
     /* This check recognizes most separate debuginfo files.  */
-    if (__glibc_unlikely ((l->l_ld == 0 && type == ET_DYN) || empty_dynamic))
+    if (__glibc_unlikely ((l->l_ld == NULL && type == ET_DYN) || empty_dynamic))
       {
 	errstring = N_("object file has no dynamic section");
 	goto lose;
@@ -1238,7 +1266,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
       }
   }
 
-  if (l->l_ld != 0)
+  if (l->l_ld != NULL)
     l->l_ld = (ElfW(Dyn) *) ((ElfW(Addr)) l->l_ld + l->l_addr);
 
   elf_get_dynamic_info (l, false, false);
@@ -1279,15 +1307,17 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
     /* Adjust the PT_PHDR value by the runtime load address.  */
     l->l_phdr = (ElfW(Phdr) *) ((ElfW(Addr)) l->l_phdr + l->l_addr);
 
-  if (__glibc_unlikely ((stack_flags &~ GL(dl_stack_flags)) & PF_X))
+  if (__glibc_unlikely ((stack_flags &~ GL(dl_stack_prot_flags)) & PROT_EXEC))
     {
       /* The stack is presently not executable, but this module
-	 requires that it be executable.  */
-#if PTHREAD_IN_LIBC
-      errval = _dl_make_stacks_executable (stack_endp);
-#else
-      errval = (*GL(dl_make_stack_executable_hook)) (stack_endp);
-#endif
+	 requires that it be executable.  Only tries to change the
+	 stack protection during process startup.  */
+      if ((mode & __RTLD_DLOPEN) == 0
+	  && TUNABLE_GET (glibc, rtld, execstack, int32_t, NULL) == 1)
+	errval = _dl_make_stack_executable (stack_endp);
+      else
+	errval = EINVAL;
+
       if (errval)
 	{
 	  errstring = N_("\
@@ -1298,7 +1328,7 @@ cannot enable executable stack as shared object requires");
 
   /* Adjust the address of the TLS initialization image.  */
   if (l->l_tls_initimage != NULL)
-    l->l_tls_initimage = (char *) l->l_tls_initimage + l->l_addr;
+    l->l_tls_initimage = (void*)((uintptr_t)l->l_tls_initimage + l->l_addr);
 
   /* Process program headers again after load segments are mapped in
      case processing requires accessing those segments.  Scan program
@@ -1385,10 +1415,8 @@ cannot enable executable stack as shared object requires");
 
   /* When we profile the SONAME might be needed for something else but
      loading.  Add it right away.  */
-  if (__glibc_unlikely (GLRO(dl_profile) != NULL)
-      && l->l_info[DT_SONAME] != NULL)
-    add_name_to_object (l, ((const char *) D_PTR (l, l_info[DT_STRTAB])
-			    + l->l_info[DT_SONAME]->d_un.d_val));
+  if (__glibc_unlikely (GLRO(dl_profile) != NULL) && l_soname (l) != NULL)
+    add_name_to_object (l, l_soname (l));
 #else
   /* Audit modules only exist when linking is dynamic so ORIGNAME
      cannot be non-NULL.  */
@@ -1398,9 +1426,7 @@ cannot enable executable stack as shared object requires");
   /* If we have newly loaded libc.so, update the namespace
      description.  */
   if (GL(dl_ns)[nsid].libc_map == NULL
-      && l->l_info[DT_SONAME] != NULL
-      && strcmp (((const char *) D_PTR (l, l_info[DT_STRTAB])
-		  + l->l_info[DT_SONAME]->d_un.d_val), LIBC_SO) == 0)
+      && l_soname (l) != NULL && strcmp (l_soname(l), LIBC_SO) == 0)
     GL(dl_ns)[nsid].libc_map = l;
 
   /* _dl_close can only eventually undo the module ID assignment (via
@@ -1426,33 +1452,7 @@ cannot enable executable stack as shared object requires");
   if (mode & __RTLD_SPROF)
     return l;
 
-  /* Signal that we are going to add new objects.  */
-  struct r_debug *r = _dl_debug_update (nsid);
-  if (r->r_state == RT_CONSISTENT)
-    {
-#ifdef SHARED
-      /* Auditing checkpoint: we are going to add new objects.  Since this
-         is called after _dl_add_to_namespace_list the namespace is guaranteed
-	 to not be empty.  */
-      if ((mode & __RTLD_AUDIT) == 0)
-	_dl_audit_activity_nsid (nsid, LA_ACT_ADD);
-#endif
-
-      /* Notify the debugger we have added some objects.  We need to
-	 call _dl_debug_initialize in a static program in case dynamic
-	 linking has not been used before.  */
-      r->r_state = RT_ADD;
-      _dl_debug_state ();
-      LIBC_PROBE (map_start, 2, nsid, r);
-    }
-  else
-    assert (r->r_state == RT_ADD);
-
-#ifdef SHARED
-  /* Auditing checkpoint: we have a new object.  */
-  if (!GL(dl_ns)[l->l_ns]._ns_loaded->l_auditing)
-    _dl_audit_objopen (l, nsid);
-#endif
+  _dl_notify_new_object (mode, nsid, l);
 
   return l;
 }
@@ -1633,6 +1633,8 @@ open_verify (const char *name, int fd,
 		 32-bit and 64-bit binaries can be run this might
 		 happen.  */
 	      *found_other_class = true;
+	      if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_LIBS))
+		_dl_debug_printf ("    (incompatible ELF class)\n");
 	      __close_nocancel (fd);
 	      __set_errno (ENOENT);
 	      return -1;
@@ -1671,6 +1673,8 @@ open_verify (const char *name, int fd,
 	}
       if (! __glibc_likely (elf_machine_matches_host (ehdr)))
 	{
+	  if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_LIBS))
+	    _dl_debug_printf ("    (incompatible ELF machine)\n");
 	  __close_nocancel (fd);
 	  __set_errno (ENOENT);
 	  return -1;
@@ -1706,11 +1710,18 @@ open_verify (const char *name, int fd,
 			    (phdr, ehdr->e_phnum, fbp->buf, fbp->len,
 			     loader, fd)))
 	{
+	  if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_LIBS))
+	    _dl_debug_printf ("    (incompatible ELF headers with the host)\n");
 	  __close_nocancel (fd);
 	  __set_errno (ENOENT);
 	  return -1;
 	}
 
+    }
+  else
+    {
+      if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_LIBS))
+	_dl_debug_printf ("    (no such file)\n");
     }
 
   return fd;
@@ -1822,6 +1833,11 @@ open_path (const char *name, size_t namelen, int mode,
 		  /* The shared object cannot be tested for being SUID
 		     or this bit is not set.  In this case we must not
 		     use this object.  */
+		  if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_LIBS))
+		    _dl_debug_printf ("  refusing to load file=%s, the shared "
+				      "object cannot be tested for being "
+				      "SUID or the bit is not set\n",
+				      buf);
 		  __close_nocancel (fd);
 		  fd = -1;
 		  /* We simply ignore the file, signal this by setting
@@ -1877,24 +1893,14 @@ open_path (const char *name, size_t namelen, int mode,
   return -1;
 }
 
-/* Map in the shared object file NAME.  */
-
 struct link_map *
-_dl_map_object (struct link_map *loader, const char *name,
-		int type, int trace_mode, int mode, Lmid_t nsid)
+_dl_lookup_map (Lmid_t nsid, const char *name)
 {
-  int fd;
-  const char *origname = NULL;
-  char *realname;
-  char *name_copy;
-  struct link_map *l;
-  struct filebuf fb;
-
   assert (nsid >= 0);
   assert (nsid < GL(dl_nns));
 
   /* Look for this name among those already loaded.  */
-  for (l = GL(dl_ns)[nsid]._ns_loaded; l; l = l->l_next)
+  for (struct link_map *l = GL(dl_ns)[nsid]._ns_loaded; l; l = l->l_next)
     {
       /* If the requested name matches the soname of a loaded object,
 	 use that object.  Elide this check for names that have not
@@ -1903,25 +1909,34 @@ _dl_map_object (struct link_map *loader, const char *name,
 	continue;
       if (!_dl_name_match_p (name, l))
 	{
-	  const char *soname;
-
-	  if (__glibc_likely (l->l_soname_added)
-	      || l->l_info[DT_SONAME] == NULL)
-	    continue;
-
-	  soname = ((const char *) D_PTR (l, l_info[DT_STRTAB])
-		    + l->l_info[DT_SONAME]->d_un.d_val);
-	  if (strcmp (name, soname) != 0)
+	  if (__glibc_likely (l->l_soname_added) || l_soname (l) == NULL
+	      || strcmp (name, l_soname (l)) != 0)
 	    continue;
 
 	  /* We have a match on a new name -- cache it.  */
-	  add_name_to_object (l, soname);
+	  add_name_to_object (l, l_soname (l));
 	  l->l_soname_added = 1;
 	}
 
       /* We have a match.  */
       return l;
     }
+
+  return NULL;
+}
+
+/* Map in the shared object file NAME.  */
+
+struct link_map *
+_dl_map_new_object (struct link_map *loader, const char *name,
+		    int type, int trace_mode, int mode, Lmid_t nsid)
+{
+  int fd;
+  const char *origname = NULL;
+  char *realname;
+  char *name_copy;
+  struct link_map *l;
+  struct filebuf fb;
 
   /* Display information if we are debugging.  */
   if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_FILES)
@@ -1930,6 +1945,9 @@ _dl_map_object (struct link_map *loader, const char *name,
 		      ? "\nfile=%s [%lu];  needed by %s [%lu]\n"
 		      : "\nfile=%s [%lu];  dynamically loaded by %s [%lu]\n",
 		      name, nsid, DSO_FILENAME (loader->l_name), loader->l_ns);
+
+  /* Will be true if we found a DSO which is of the other ELF class.  */
+  bool found_other_class = false;
 
 #ifdef SHARED
   /* Give the auditing libraries a chance to change the name before we
@@ -1947,9 +1965,6 @@ _dl_map_object (struct link_map *loader, const char *name,
 	origname = before;
     }
 #endif
-
-  /* Will be true if we found a DSO which is of the other ELF class.  */
-  bool found_other_class = false;
 
   if (strchr (name, '/') == NULL)
     {
@@ -2044,7 +2059,7 @@ _dl_map_object (struct link_map *loader, const char *name,
 	      l = (loader
 		   ?: GL(dl_ns)[LM_ID_BASE]._ns_loaded
 # ifdef SHARED
-		   ?: &GL(dl_rtld_map)
+		   ?: &_dl_rtld_map
 # endif
 		  );
 
@@ -2170,8 +2185,19 @@ _dl_map_object (struct link_map *loader, const char *name,
 
   void *stack_end = __libc_stack_end;
   return _dl_map_object_from_fd (name, origname, fd, &fb, realname, loader,
-				 type, mode, &stack_end, nsid);
+				 type, mode, stack_end, nsid);
 }
+
+struct link_map *
+_dl_map_object (struct link_map *loader, const char *name,
+		int type, int trace_mode, int mode, Lmid_t nsid)
+{
+  struct link_map *l = _dl_lookup_map (nsid, name);
+  if (l != NULL)
+    return l;
+  return _dl_map_new_object (loader, name, type, trace_mode, mode, nsid);
+}
+
 
 struct add_path_state
 {

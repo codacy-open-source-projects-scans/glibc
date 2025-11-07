@@ -1,5 +1,5 @@
 /* Compute x * y + z as ternary operation.
-   Copyright (C) 2010-2024 Free Software Foundation, Inc.
+   Copyright (C) 2010-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -45,7 +45,7 @@ __fmaf (float x, float y, float z)
 
   /* Ensure correct sign of an exact zero result by performing the
      addition in the original rounding mode in that case.  */
-  if (temp == -z)
+  if (temp == (double) -z)
     return (float) temp + z;
 
   union ieee754_double u;

@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2024 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    This program is free software; you can redistribute it and/or modify
@@ -14,8 +14,9 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, see <https://www.gnu.org/licenses/>.  */
 
+#define PACKAGE _libc_intl_domainname
 #ifdef HAVE_CONFIG_H
-# include "config.h"
+# include <config.h>
 #endif
 
 #include <argp.h>
@@ -429,7 +430,7 @@ read_input_file (struct catalog *current, const char *fname)
 
 		      /* Test whether the identifier was already used.  */
 		      runp = current->all_sets;
-		      while (runp != 0)
+		      while (runp != NULL)
 			if (runp->symbol != NULL
 			    && strcmp (runp->symbol, symbol) == 0)
 			  break;

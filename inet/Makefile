@@ -1,4 +1,4 @@
-# Copyright (C) 1991-2024 Free Software Foundation, Inc.
+# Copyright (C) 1991-2025 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -25,6 +25,8 @@ include ../Makeconfig
 headers := \
   $(wildcard arpa/*.h protocols/*.h) \
   bits/in.h \
+  bits/inet-fortified-decl.h \
+  bits/inet-fortified.h \
   ifaddrs.h \
   netinet/ether.h \
   netinet/icmp6.h \
@@ -137,6 +139,10 @@ $(inst_sysconfdir)/rpc: etc.rpc $(+force)
 
 ifeq ($(build-static-nss),yes)
 CFLAGS += -DSTATIC_NSS
+endif
+
+ifeq ($(have-test-clang),yes)
+CFLAGS-tst-deadline.c += -Wno-ignored-attributes
 endif
 
 # The test uses dlopen indirectly and would otherwise load system

@@ -1,5 +1,5 @@
 /* Conversion loop frame work.
-   Copyright (C) 1998-2024 Free Software Foundation, Inc.
+   Copyright (C) 1998-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -141,12 +141,13 @@
    points.  */
 #define STANDARD_TO_LOOP_ERR_HANDLER(Incr) \
   {									      \
-    result = __gconv_mark_illegal_input (step_data);			      \
-									      \
     if (irreversible == NULL)						      \
-      /* This means we are in call from __gconv_transliterate.  In this	      \
-	 case we are not doing any error recovery outself.  */		      \
-      break;								      \
+      {									      \
+	/* This means we are in call from __gconv_transliterate.  In this     \
+	   case we are not doing any error recovery ourselves.  */	      \
+	result = __gconv_mark_illegal_input (step_data);		      \
+	break;								      \
+      }									      \
 									      \
     /* If needed, flush any conversion state, so that __gconv_transliterate   \
        starts with current shift state.  */				      \
@@ -157,6 +158,8 @@
       result = __gconv_transliterate					      \
 	(step, step_data, *inptrp,					      \
 	 &inptr, inend, &outptr, irreversible);			      \
+    else								      \
+      result = __gconv_mark_illegal_input (step_data);			      \
 									      \
     REINIT_PARAMS;							      \
 									      \
@@ -191,7 +194,7 @@
    has a comment referencing this diagnostic disabling; updates in one
    place may require updates in the other.  */
 DIAG_PUSH_NEEDS_COMMENT;
-DIAG_IGNORE_Os_NEEDS_COMMENT (7, "-Wmaybe-uninitialized");
+DIAG_IGNORE_Os_NEEDS_COMMENT_GCC (7, "-Wmaybe-uninitialized");
 /* Handling of Unicode 3.1 TAG characters.  Unicode recommends
    "If language codes are not relevant to the particular processing
     operation, then they should be ignored."  This macro is usually

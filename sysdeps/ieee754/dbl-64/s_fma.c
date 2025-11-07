@@ -1,5 +1,5 @@
 /* Compute x * y + z as ternary operation.
-   Copyright (C) 2010-2024 Free Software Foundation, Inc.
+   Copyright (C) 2010-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -216,7 +216,7 @@ __fma (double x, double y, double z)
   /* Ensure the arithmetic is not scheduled after feclearexcept call.  */
   math_force_eval (m2);
   math_force_eval (a2);
-  feclearexcept (FE_INEXACT);
+  __feclearexcept (FE_INEXACT);
 
   /* If the result is an exact zero, ensure it has the correct sign.  */
   if (a1 == 0 && m2 == 0)
@@ -243,6 +243,9 @@ __fma (double x, double y, double z)
 
   /* Reset rounding mode and test for inexact simultaneously.  */
   int j = libc_feupdateenv_test (&env, FE_INEXACT) != 0;
+
+  /* Ensure value of a1 + u.d is not reused.  */
+  a1 = math_opt_barrier (a1);
 
   if (__glibc_likely (adjust == 0))
     {

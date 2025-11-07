@@ -1,5 +1,5 @@
 /* Extended regular expression matching and search library.
-   Copyright (C) 2002-2024 Free Software Foundation, Inc.
+   Copyright (C) 2002-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
    Contributed by Isamu Hasegawa <isamu@yamato.ibm.com>.
 
@@ -2277,7 +2277,7 @@ merge_state_with_log (reg_errcode_t *err, re_match_context_t *mctx,
       mctx->state_log[cur_idx] = next_state;
       mctx->state_log_top = cur_idx;
     }
-  else if (mctx->state_log[cur_idx] == 0)
+  else if (mctx->state_log[cur_idx] == NULL)
     {
       mctx->state_log[cur_idx] = next_state;
     }
@@ -3772,7 +3772,7 @@ check_node_accept_bytes (const re_dfa_t *dfa, Idx node_idx,
 		 however the loop will be executed iff ncoll_syms is larger
 		 than 0,which means extra will be already initialized.  */
 	      DIAG_PUSH_NEEDS_COMMENT;
-	      DIAG_IGNORE_Os_NEEDS_COMMENT (8, "-Wmaybe-uninitialized");
+	      DIAG_IGNORE_Os_NEEDS_COMMENT_GCC (8, "-Wmaybe-uninitialized");
 	      const unsigned char *coll_sym = extra + cset->coll_syms[i];
 	      DIAG_POP_NEEDS_COMMENT;
 	      /* Compare the length of input collating element and

@@ -1,4 +1,4 @@
-# Copyright (C) 1992-2024 Free Software Foundation, Inc.
+# Copyright (C) 1992-2025 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -91,7 +91,6 @@ routines := \
   getcwd \
   getdirname \
   getwd \
-  isatty \
   lchmod \
   lchown \
   link \
@@ -188,6 +187,7 @@ tests := \
   tst-closefrom \
   tst-copy_file_range \
   tst-faccessat \
+  tst-faccessat-setuid \
   tst-fchmod-errors \
   tst-fchmod-fuse \
   tst-fchmodat \

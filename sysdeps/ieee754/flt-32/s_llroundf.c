@@ -1,5 +1,5 @@
 /* Round float value to long long int.
-   Copyright (C) 1997-2024 Free Software Foundation, Inc.
+   Copyright (C) 1997-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,11 +23,14 @@
 #include <math_private.h>
 #include <libm-alias-float.h>
 #include <fix-fp-int-convert-overflow.h>
-
+#include <math-use-builtins.h>
 
 long long int
 __llroundf (float x)
 {
+#if USE_LLROUNDF_BUILTIN
+  return __builtin_llroundf (x);
+#else
   int32_t j0;
   uint32_t i;
   long long int result;
@@ -68,6 +71,7 @@ __llroundf (float x)
     }
 
   return sign * result;
+#endif /* ! USE_LLROUNDF_BUILTIN  */
 }
 
 libm_alias_float (__llround, llround)

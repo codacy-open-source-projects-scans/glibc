@@ -1,5 +1,5 @@
 /* Wait for process state.
-   Copyright (C) 2020-2024 Free Software Foundation, Inc.
+   Copyright (C) 2020-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -59,7 +59,7 @@ support_process_state_wait (pid_t pid, enum support_process_state state)
 
   for (;;)
     {
-      char cur_state = -1;
+      char cur_state = CHAR_MAX;
       while (xgetline (&line, &linesiz, fstatus) > 0)
 	if (strncmp (line, "State:", strlen ("State:")) == 0)
 	  {
@@ -67,7 +67,7 @@ support_process_state_wait (pid_t pid, enum support_process_state state)
 	    break;
 	  }
       /* Fallback to nanosleep for invalid state.  */
-      if (cur_state == -1)
+      if (cur_state == CHAR_MAX)
 	break;
 
       for (size_t i = 0; i < array_length (process_states); ++i)

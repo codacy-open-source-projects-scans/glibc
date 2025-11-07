@@ -1,5 +1,5 @@
 /* Changing the thread memory protection key, generic stub.
-   Copyright (C) 2017-2024 Free Software Foundation, Inc.
+   Copyright (C) 2017-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 #include <sys/mman.h>
 
 int
-__pkey_set (int key, unsigned int access_rights)
+__pkey_set (int key, unsigned int access_restrictions)
 {
   __set_errno (ENOSYS);
   return -1;

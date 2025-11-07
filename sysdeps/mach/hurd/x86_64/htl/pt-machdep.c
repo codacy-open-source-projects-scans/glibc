@@ -1,5 +1,5 @@
 /* Machine dependent pthreads code.  Hurd/x86_64 version.
-   Copyright (C) 2000-2024 Free Software Foundation, Inc.
+   Copyright (C) 2000-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -24,6 +24,7 @@
 #include <mach/x86_64/mach_i386.h>
 #include <mach/mig_errors.h>
 #include <mach/thread_status.h>
+#include <pt-sysdep.h>
 
 int
 __thread_set_pcsptp (thread_t thread,
@@ -71,3 +72,4 @@ __thread_set_pcsptp (thread_t thread,
 
   return 0;
 }
+libc_hidden_def (__thread_set_pcsptp)

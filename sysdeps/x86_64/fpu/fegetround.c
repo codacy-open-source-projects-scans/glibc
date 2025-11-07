@@ -1,5 +1,5 @@
 /* Return current rounding direction.
-   Copyright (C) 1997-2024 Free Software Foundation, Inc.
+   Copyright (C) 1997-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@ __fegetround (void)
   /* We only check the x87 FPU unit.  The SSE unit should be the same
      - and if it's not the same there's no way to signal it.  */
 
-  __asm__ ("fnstcw %0" : "=m" (*&cw));
+  __asm__ ("fnstcw %0" : "=m" (cw));
 
   return cw & 0xc00;
 }

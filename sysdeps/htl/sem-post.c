@@ -1,5 +1,5 @@
 /* Post a semaphore.  Generic version.
-   Copyright (C) 2005-2024 Free Software Foundation, Inc.
+   Copyright (C) 2005-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
 #include <hurd.h>
 
 #include <pt-internal.h>
+#include <shlib-compat.h>
 
 int
 __sem_post (sem_t *sem)
@@ -61,5 +62,8 @@ __sem_post (sem_t *sem)
 
   return 0;
 }
-libpthread_hidden_def (__sem_post)
-strong_alias (__sem_post, sem_post);
+libc_hidden_def (__sem_post)
+versioned_symbol (libc, __sem_post, sem_post, GLIBC_2_43);
+# if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_12, GLIBC_2_43)
+compat_symbol (libpthread, __sem_post, sem_post, GLIBC_2_12);
+#endif

@@ -1,4 +1,4 @@
-/* Copyright (C) 2002-2024 Free Software Foundation, Inc.
+/* Copyright (C) 2002-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -289,12 +289,6 @@ extern _Noreturn void __syscall_do_cancel (void) attribute_hidden;
 extern void __nptl_free_tcb (struct pthread *pd);
 libc_hidden_proto (__nptl_free_tcb)
 
-/* Change the permissions of a thread stack.  Called from
-   _dl_make_stacks_executable and pthread_create.  */
-int
-__nptl_change_stack_perm (struct pthread *pd);
-rtld_hidden_proto (__nptl_change_stack_perm)
-
 /* longjmp handling.  */
 extern void __pthread_cleanup_upto (__jmp_buf target, char *targetframe);
 libc_hidden_proto (__pthread_cleanup_upto)
@@ -411,6 +405,7 @@ extern int __pthread_rwlock_wrlock (pthread_rwlock_t *__rwlock);
 libc_hidden_proto (__pthread_rwlock_wrlock)
 extern int __pthread_rwlock_trywrlock (pthread_rwlock_t *__rwlock);
 extern int __pthread_rwlock_unlock (pthread_rwlock_t *__rwlock);
+libc_hidden_proto (__pthread_rwlock_unlock)
 extern int __pthread_cond_broadcast (pthread_cond_t *cond);
 libc_hidden_proto (__pthread_cond_broadcast)
 extern int __pthread_cond_destroy (pthread_cond_t *cond);
@@ -532,11 +527,6 @@ extern int __pthread_clockjoin_ex (pthread_t, void **, clockid_t,
 extern int __pthread_sigmask (int, const sigset_t *, sigset_t *);
 libc_hidden_proto (__pthread_sigmask);
 
-
-#if IS_IN (libpthread)
-hidden_proto (__pthread_rwlock_unlock)
-#endif
-
 extern int __pthread_cond_broadcast_2_0 (pthread_cond_2_0_t *cond);
 extern int __pthread_cond_destroy_2_0 (pthread_cond_2_0_t *cond);
 extern int __pthread_cond_init_2_0 (pthread_cond_2_0_t *cond,
@@ -594,10 +584,10 @@ struct __pthread_cleanup_combined_frame
 
 /* Special cleanup macros which register cleanup both using
    __pthread_cleanup_{push,pop} and using cleanup attribute.  This is needed
-   for pthread_once, so that it supports both throwing exceptions from the
-   pthread_once callback (only cleanup attribute works there) and cancellation
-   of the thread running the callback if the callback or some routines it
-   calls don't have unwind information.  */
+   for pthread_once and qsort, so that it supports both throwing exceptions
+   from the pthread_once or caller sort function callback (only cleanup
+   attribute works there) and cancellation of the thread running the callback
+   if the callback or some routines it calls don't have unwind information.  */
 
 static __always_inline void
 __pthread_cleanup_combined_routine (struct __pthread_cleanup_combined_frame

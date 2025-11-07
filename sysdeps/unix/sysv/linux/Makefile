@@ -151,15 +151,6 @@ sysdep_headers += \
   bits/struct_stat.h \
   bits/struct_stat_time64_helper.h \
   bits/syscall.h \
-  bits/termios-baud.h \
-  bits/termios-c_cc.h \
-  bits/termios-c_cflag.h \
-  bits/termios-c_iflag.h \
-  bits/termios-c_lflag.h \
-  bits/termios-c_oflag.h \
-  bits/termios-misc.h \
-  bits/termios-struct.h \
-  bits/termios-tcflow.h \
   bits/timerfd.h \
   bits/types/struct_msqid64_ds.h \
   bits/types/struct_msqid64_ds_helper.h \
@@ -201,6 +192,7 @@ tests += \
   tst-clone \
   tst-clone2 \
   tst-clone3 \
+  tst-copy_file_range-large \
   tst-epoll \
   tst-epoll-ioctls \
   tst-fanotify \
@@ -219,6 +211,7 @@ tests += \
   tst-ofdlocks \
   tst-personality \
   tst-pidfd \
+  tst-pidfd_getinfo \
   tst-pidfd_getpid \
   tst-pkey \
   tst-ppoll \
@@ -226,7 +219,9 @@ tests += \
   tst-process_mrelease \
   tst-quota \
   tst-rlimit-infinity \
+  tst-sched-affinity-inheritance \
   tst-sched_setattr \
+  tst-sched_setattr-thread \
   tst-scm_rights \
   tst-sigtimedwait \
   tst-sync_file_range \
@@ -266,6 +261,11 @@ tests-internal += \
 tests-internal += \
   tst-rseq-disable \
   # tests-internal
+
+tests-static += \
+  tst-rseq-disable-static \
+  tst-rseq-static \
+  # tests-static
 
 tests-time64 += \
   tst-adjtimex-time64 \
@@ -410,8 +410,27 @@ $(objpfx)tst-sched-consts.out: ../sysdeps/unix/sysv/linux/tst-sched-consts.py
 $(objpfx)tst-sched-consts.out: $(sysdeps-linux-python-deps)
 
 tst-rseq-disable-ENV = GLIBC_TUNABLES=glibc.pthread.rseq=0
+tst-rseq-disable-static-ENV = GLIBC_TUNABLES=glibc.pthread.rseq=0
 
 endif # $(subdir) == misc
+
+ifeq ($(subdir),termios)
+sysdep_headers += \
+  bits/termios-c_cc.h \
+  bits/termios-c_cflag.h \
+  bits/termios-c_iflag.h \
+  bits/termios-c_lflag.h \
+  bits/termios-c_oflag.h \
+  bits/termios-cbaud.h \
+  bits/termios-misc.h \
+  bits/termios-struct.h \
+  bits/termios-tcflow.h \
+  # sysdep_headers
+
+tests += \
+  tst-termios-linux \
+  # tests
+endif
 
 ifeq ($(subdir),time)
 sysdep_headers += \
@@ -495,12 +514,6 @@ endif # $(subdir) == socket
 ifeq ($(subdir),sunrpc)
 sysdep_headers += \
   nfs/nfs.h \
-  # sysdep_headers
-endif
-
-ifeq ($(subdir),termios)
-sysdep_headers += \
-  termio.h \
   # sysdep_headers
 endif
 
@@ -601,6 +614,7 @@ endif
 ifeq ($(subdir),io)
 sysdep_routines += \
   close_nocancel \
+  close_nocancel_nostatus \
   fallocate \
   fallocate64 \
   fcntl_nocancel \
@@ -652,7 +666,29 @@ install-bin += \
   # install-bin
 
 $(objpfx)pldd: $(objpfx)xmalloc.o
+
+tests += tst-rseq-tls-range tst-rseq-tls-range-4096
+tests-static += tst-rseq-tls-range-static tst-rseq-tls-range-4096-static
+modules-names += tst-rseq-tls-range-mod
+CFLAGS-tst-rseq-tls-range.c += -DMAIN_TLS_ALIGN=4
+CFLAGS-tst-rseq-tls-range-4096.c += -DMAIN_TLS_ALIGN=4096
+CFLAGS-tst-rseq-tls-range-static.c += -DMAIN_TLS_ALIGN=4
+CFLAGS-tst-rseq-tls-range-4096-static.c += -DMAIN_TLS_ALIGN=4096
+$(objpfx)tst-rseq-tls-range.out: $(objpfx)tst-rseq-tls-range-mod.so
+$(objpfx)tst-rseq-tls-range-4096.out: $(objpfx)tst-rseq-tls-range-mod.so
+$(objpfx)tst-rseq-tls-range-static.out: $(objpfx)tst-rseq-tls-range-mod.so
+$(objpfx)tst-rseq-tls-range-4096-static.out: $(objpfx)tst-rseq-tls-range-mod.so
+tst-rseq-tls-range-static-ENV = LD_LIBRARY_PATH=$(objpfx):$(common-objpfx)
+tst-rseq-tls-range-4096-static-ENV = LD_LIBRARY_PATH=$(objpfx):$(common-objpfx)
+
+test-internal-extras += tst-nolink-libc
+ifeq ($(run-built-tests),yes)
+tests-special += \
+  $(objpfx)tst-nolink-libc-1.out \
+  $(objpfx)tst-nolink-libc-2.out \
+  # tests-special
 endif
+endif # $(subdir) == elf
 
 ifeq ($(subdir),rt)
 CFLAGS-mq_send.c += -fexceptions
@@ -668,6 +704,7 @@ ifeq ($(subdir),nptl)
 tests += \
   tst-align-clone \
   tst-getpid1 \
+  tst-sem_getvalue-affinity \
   # tests
 
 # tst-rseq-nptl is an internal test because it requires a definition of
@@ -675,4 +712,26 @@ tests += \
 tests-internal += \
   tst-rseq-nptl \
   # tests-internal
+
+tests-static += \
+  tst-rseq-nptl-static \
+  # tests-static
 endif
+
+ifeq ($(subdir),string)
+modules-names += \
+  tst-xsi-strerror_r-mod \
+  # modules-names
+
+tests += \
+  tst-sigabbrev_np-strings \
+  tst-strerror-strings \
+  tst-strerror_l-strings \
+  tst-strerror_r-strings \
+  tst-strerrordesc_np-strings \
+  tst-strsignal-strings \
+  tst-xsi-strerror_r-strings \
+  # tests
+
+$(objpfx)tst-xsi-strerror_r-strings: $(objpfx)tst-xsi-strerror_r-mod.so
+endif # $(subdir) == string

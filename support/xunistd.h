@@ -1,5 +1,5 @@
 /* POSIX-specific extra functions.
-   Copyright (C) 2016-2024 Free Software Foundation, Inc.
+   Copyright (C) 2016-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -35,6 +35,7 @@ pid_t xfork (void);
 pid_t xwaitpid (pid_t, int *status, int flags);
 void xpipe (int[2]);
 void xdup2 (int, int);
+int xdup (int);
 int xopen (const char *path, int flags, mode_t);
 void support_check_stat_fd (const char *name, int fd, int result);
 void support_check_stat_path (const char *name, const char *path, int result);

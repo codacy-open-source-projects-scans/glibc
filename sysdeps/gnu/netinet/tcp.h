@@ -212,6 +212,9 @@ enum
 # define TCPI_OPT_ECN		8  /* ECN was negotiated at TCP session init */
 # define TCPI_OPT_ECN_SEEN	16 /* we received at least one packet with ECT */
 # define TCPI_OPT_SYN_DATA	32 /* SYN-ACK acked data in SYN sent or rcvd */
+# define TCPI_OPT_USEC_TS	64 /* usec timestamps */
+# define TCPI_OPT_TFO_CHILD	128 /* child from a Fast Open option on SYN */
+
 
 /* Values for tcpi_state.  */
 enum tcp_ca_state
@@ -343,6 +346,15 @@ struct tcp_zerocopy_receive
   uint64_t address; /* In: address of mapping.  */
   uint32_t length; /* In/out: number of bytes to map/mapped.  */
   uint32_t recv_skip_hint; /* Out: amount of bytes to skip.  */
+  uint32_t inq; /* Out: amount of bytes in read queue.  */
+  int32_t err; /* Out: socket error.  */
+  uint64_t copybuf_address; /* On: copybuf address (small reads).  */
+  int32_t copybuf_len; /* In/Out: copybuf bytes avail/used or error.  */
+  uint32_t flags; /* In: flags.  */
+  uint64_t msg_control; /* Ancillary data.  */
+  uint64_t msg_controllen;
+  uint32_t msg_flags;
+  uint32_t reserved; /* Set to 0 for now.  */
 };
 
 #endif /* Misc.  */

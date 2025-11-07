@@ -1,4 +1,4 @@
-# Copyright (C) 1998-2024 Free Software Foundation, Inc.
+# Copyright (C) 1998-2025 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -68,7 +68,7 @@ tz-cflags = -DTZDIR='"$(zonedir)"' \
 	    -DTZDEFRULES='"$(posixrules-file)"' \
 	    -DTM_GMTOFF=tm_gmtoff -DTM_ZONE=tm_zone \
 	    -DHAVE_GETTEXT -DUSE_LTZ=0 -D_ISOMAC -DTZ_DOMAIN='"libc"' \
-	    -include $(common-objpfx)config.h -Wno-maybe-uninitialized
+	    -include $(common-objpfx)config.h $(config-cflags-wno-maybe-uninitialized)
 
 # The -Wno-unused-variable flag is used to prevent GCC 6
 # from warning about time_t_min and time_t_max which are

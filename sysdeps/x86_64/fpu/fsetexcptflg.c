@@ -1,5 +1,5 @@
 /* Set floating-point environment exception handling.
-   Copyright (C) 2001-2024 Free Software Foundation, Inc.
+   Copyright (C) 2001-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -35,22 +35,22 @@ fesetexceptflag (const fexcept_t *flagp, int excepts)
 
   /* Get the current x87 FPU environment.  We have to do this since we
      cannot separately set the status word.  */
-  __asm__ ("fnstenv %0" : "=m" (*&temp));
+  __asm__ ("fnstenv %0" : "=m" (temp));
 
   /* Clear relevant flags.  */
   temp.__status_word &= ~(excepts & ~ *flagp);
 
   /* Store the new status word (along with the rest of the environment).  */
-  __asm__ ("fldenv %0" : : "m" (*&temp));
+  __asm__ ("fldenv %0" : : "m" (temp));
 
   /* And now similarly for SSE.  */
-  __asm__ ("stmxcsr %0" : "=m" (*&mxcsr));
+  __asm__ ("%vstmxcsr %0" : "=m" (mxcsr));
 
   /* Clear or set relevant flags.  */
   mxcsr ^= (mxcsr ^ *flagp) & excepts;
 
   /* Put the new data in effect.  */
-  __asm__ ("ldmxcsr %0" : : "m" (*&mxcsr));
+  __asm__ ("%vldmxcsr %0" : : "m" (mxcsr));
 
   /* Success.  */
   return 0;

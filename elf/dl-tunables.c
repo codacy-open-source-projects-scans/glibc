@@ -1,7 +1,7 @@
 /* The tunable framework.  See the README.tunables to know how to use the
    tunable in a glibc module.
 
-   Copyright (C) 2016-2024 Free Software Foundation, Inc.
+   Copyright (C) 2016-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -36,6 +36,16 @@
 
 #define TUNABLES_INTERNAL 1
 #include "dl-tunables.h"
+
+/* The function might be called before the process is self-relocated.  */
+static size_t
+__attribute_optimization_barrier__
+_dl_strlen (const char *s)
+{
+  const char *p = s;
+  for (; *s != '\0'; s++);
+  return s - p;
+}
 
 static char **
 get_next_env (char **envp, char **name, char **val, char ***prev_envp)
@@ -252,7 +262,7 @@ parse_tunable_print_error (const struct tunable_toset_t *toset)
 static void
 parse_tunables (const char *valstring)
 {
-  struct tunable_toset_t tunables[tunables_list_size] = { 0 };
+  struct tunable_toset_t tunables[tunables_list_size] = {};
   if (parse_tunables_string (valstring, tunables) == -1)
     {
       _dl_error_printf (
@@ -301,7 +311,7 @@ __tunables_init (char **envp)
     return;
 
   enum { tunable_num_env_alias = array_length (tunable_env_alias_list) };
-  struct tunable_toset_t tunables_env_alias[tunable_num_env_alias] = { 0 };
+  struct tunable_toset_t tunables_env_alias[tunable_num_env_alias] = {};
 
   while ((envp = get_next_env (envp, &envname, &envval, &prev_envp)) != NULL)
     {
@@ -324,9 +334,8 @@ __tunables_init (char **envp)
 
 	  if (tunable_is_name (name, envname))
 	    {
-	      size_t envvallen = 0;
 	      /* The environment variable is always null-terminated.  */
-	      for (const char *p = envval; *p != '\0'; p++, envvallen++);
+	      size_t envvallen = _dl_strlen (envval);
 
 	      tunables_env_alias[i] =
 		(struct tunable_toset_t) { cur, envval, envvallen };

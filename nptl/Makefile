@@ -1,4 +1,4 @@
-# Copyright (C) 2002-2024 Free Software Foundation, Inc.
+# Copyright (C) 2002-2025 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -63,7 +63,6 @@ routines = \
   old_pthread_cond_signal \
   old_pthread_cond_timedwait \
   old_pthread_cond_wait \
-  pthread_atfork \
   pthread_attr_copy \
   pthread_attr_destroy \
   pthread_attr_extension \
@@ -124,6 +123,7 @@ routines = \
   pthread_getname \
   pthread_getschedparam \
   pthread_getspecific \
+  pthread_gettid_np \
   pthread_join \
   pthread_join_common \
   pthread_key_create \
@@ -210,7 +210,6 @@ routines = \
   vars \
   # routines
 
-static-only-routines = pthread_atfork
 libpthread-routines = libpthread-compat
 libpthread-shared-only-routines = libpthread-compat
 
@@ -276,6 +275,7 @@ LDLIBS-tst-minstack-throw = -lstdc++
 tests = \
   tst-attr2 \
   tst-attr3 \
+  tst-attr4 \
   tst-cancel4_1 \
   tst-cancel4_2 \
   tst-cancel7 \
@@ -288,6 +288,7 @@ tests = \
   tst-dlsym1 \
   tst-exec4 \
   tst-exec5 \
+  tst-guard1 \
   tst-initializers1 \
   tst-initializers1-c11 \
   tst-initializers1-c89 \
@@ -312,16 +313,19 @@ tests = \
   tst-mutexpi11 \
   tst-mutexpi12 \
   tst-once5 \
+  tst-pthread-affinity-inheritance \
   tst-pthread-attr-affinity \
   tst-pthread-attr-affinity-fail \
   tst-pthread-attr-sigmask \
   tst-pthread-defaultattr-free \
   tst-pthread-gdb-attach \
   tst-pthread-gdb-attach-static \
+  tst-pthread-getcpuclockid-invalid \
   tst-pthread-key1-static \
   tst-pthread-timedlock-lockloop \
   tst-pthread_exit-nothreads \
   tst-pthread_exit-nothreads-static \
+  tst-pthread_gettid_np \
   tst-robust-fork \
   tst-robustpi1 \
   tst-robustpi2 \
@@ -371,6 +375,7 @@ tests-container =  tst-pthread-getattr
 tests-internal := \
   tst-barrier5 \
   tst-cond22 \
+  tst-dl-debug-tid \
   tst-mutex8 \
   tst-mutex8-static \
   tst-mutexpi8 \
@@ -472,7 +477,7 @@ tests-internal += \
   tst-tls3-malloc \
   tst-tls5 \
   # tests-internal
-ifeq ($(have-z-execstack),yes)
+ifeq ($(have-z-execstack)$(have-test-cc-trampoline),yesyes)
 tests += tst-execstack-threads
 endif
 endif
@@ -481,7 +486,6 @@ modules-names = \
   tst-audit-threads-mod1 \
   tst-audit-threads-mod2 \
   tst-compat-forwarder-mod \
-  tst-execstack-threads-mod \
   tst-stack4mod \
   tst-tls3mod \
   tst-tls5mod \
@@ -501,6 +505,12 @@ test-extras += \
   tst-cleanup4aux \
   tst-cleanupx4aux \
   # test-extras
+
+ifneq ($(have-test-clang),yes)
+modules-names += \
+  tst-execstack-threads-mod \
+  # modules-names
+endif
 
 # This test exercises compat symbols removed in glibc 2.34.
 ifdef have-GLIBC_2.33
@@ -564,6 +574,7 @@ xtests-static += tst-setuid1-static
 
 ifeq ($(run-built-tests),yes)
 tests-special += \
+  $(objpfx)tst-dl-debug-tid.out \
   $(objpfx)tst-oddstacklimit.out \
   # tests-special
 ifeq ($(build-shared),yes)
@@ -693,11 +704,19 @@ $(objpfx)tst-execstack-threads.out: $(objpfx)tst-execstack-threads-mod.so
 LDFLAGS-tst-execstack-threads = -Wl,-z,noexecstack
 LDFLAGS-tst-execstack-threads-mod.so = -Wl,-z,execstack
 CFLAGS-tst-execstack-threads-mod.c += -Wno-trampolines
+ifeq ($(have-no-error-execstack),yes)
+LDFLAGS-tst-execstack-threads-mod.so += -Wl,--no-error-execstack
+endif
 
 tst-stackguard1-ARGS = --command "$(host-test-program-cmd) --child"
 tst-stackguard1-static-ARGS = --command "$(objpfx)tst-stackguard1-static --child"
 
 ifeq ($(run-built-tests),yes)
+$(objpfx)tst-dl-debug-tid.out: tst-dl-debug-tid.sh $(objpfx)tst-dl-debug-tid
+	$(SHELL) $< $(common-objpfx) '$(test-wrapper)' '$(rtld-prefix)' \
+	  '$(test-wrapper-env)' '$(run-program-env)' \
+	  $(objpfx)tst-dl-debug-tid > $@; $(evaluate-test)
+
 $(objpfx)tst-oddstacklimit.out: $(objpfx)tst-oddstacklimit $(objpfx)tst-basic1
 	$(test-program-prefix) $< --command '$(host-test-program-cmd)' > $@; \
 	$(evaluate-test)

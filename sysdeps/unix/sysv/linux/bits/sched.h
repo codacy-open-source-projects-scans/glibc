@@ -1,6 +1,6 @@
 /* Definitions of constants and data structure for POSIX 1003.1b-1993
    scheduling interface.
-   Copyright (C) 1996-2024 Free Software Foundation, Inc.
+   Copyright (C) 1996-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -29,11 +29,12 @@
 #define SCHED_FIFO		1
 #define SCHED_RR		2
 #ifdef __USE_GNU
-# define SCHED_NORMAL		SCHED_OTHER
+# define SCHED_NORMAL		0
 # define SCHED_BATCH		3
 # define SCHED_ISO		4
 # define SCHED_IDLE		5
 # define SCHED_DEADLINE		6
+# define SCHED_EXT		7
 
 /* Flags that can be used in policy values.  */
 # define SCHED_RESET_ON_FORK	0x40000000
@@ -48,8 +49,10 @@
 #define SCHED_FLAG_UTIL_CLAMP_MAX	0x40
 
 /* Combinations of sched_flags fields.  */
-#define SCHED_FLAG_KEEP_ALL		0x18
-#define SCHED_FLAG_UTIL_CLAMP		0x60
+#define SCHED_FLAG_KEEP_ALL \
+  (SCHED_FLAG_KEEP_POLICY | SCHED_FLAG_KEEP_PARAMS)
+#define SCHED_FLAG_UTIL_CLAMP \
+  (SCHED_FLAG_UTIL_CLAMP_MIN | SCHED_FLAG_UTIL_CLAMP_MAX)
 
 /* Use "" to work around incorrect macro expansion of the
    __has_include argument (GCC PR 80005).  */
@@ -149,7 +152,7 @@ int sched_setattr (pid_t tid, struct sched_attr *attr, unsigned int flags)
    store it in *ATTR.  */
 int sched_getattr (pid_t tid, struct sched_attr *attr, unsigned int size,
 		   unsigned int flags)
-  __THROW __nonnull ((2)) __attr_access ((__write_only__, 2, 3));
+  __THROW __nonnull ((2));
 
 #endif
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2024 Free Software Foundation, Inc.
+# Copyright (C) 2013-2025 Free Software Foundation, Inc.
 # Copyright The GNU Toolchain Authors.
 # This file is part of the GNU C Library.
 
@@ -25,29 +25,57 @@ include ../Makeconfig
 
 bench-math := \
   acos \
+  acosf \
   acosh \
+  acoshf \
+  acospi \
+  acospif \
   asin \
+  asinf \
   asinh \
+  asinhf \
+  asinpi \
+  asinpif \
   atan \
   atan2 \
+  atan2f \
+  atan2pi \
+  atan2pif \
+  atanf \
   atanh \
+  atanhf \
+  atanpi \
+  atanpif \
   cbrt \
+  cbrtf \
   ceil \
   ceilf \
   cos \
   cosf \
   cosh \
+  coshf \
+  cospi \
+  cospif \
   erf \
   erfc \
+  erfcf \
+  erff \
   exp \
   exp10 \
   exp10f \
+  exp10m1 \
+  exp10m1f \
   exp2 \
   exp2f \
+  exp2m1 \
+  exp2m1f \
   expf \
+  expl \
   expm1 \
+  expm1f \
   floor \
   floorf \
+  fmal \
   fmax \
   fmaxf \
   fmin \
@@ -64,35 +92,57 @@ bench-math := \
   j0 \
   j1 \
   lgamma \
+  lgammaf \
+  lgammaf_r \
   llrint \
   llrintf \
   log \
   log10 \
+  log10f \
+  log10p1 \
+  log10p1f \
   log1p \
+  log1pf \
   log2 \
   log2f \
+  log2l \
+  log2p1 \
+  log2p1f \
   logb \
   logbf \
   logf \
   lrint \
   lrintf \
   modf \
+  modff \
   nearbyint \
   nearbyintf \
   pow \
   powf \
+  powl \
+  remainder \
+  remainderf \
   rint \
   rintf \
   roundeven \
   roundevenf \
+  rsqrt \
+  rsqrtf \
   sin \
   sincos \
   sincosf \
   sinf \
   sinh \
+  sinhf \
+  sinpi \
+  sinpif \
   sqrt \
   tan \
+  tanf \
   tanh \
+  tanhf \
+  tanpi \
+  tanpif \
   tgamma \
   tgammaf \
   trunc \
@@ -125,6 +175,11 @@ bench-pthread := \
   pthread_once \
   thread_create \
   # bench-pthread
+
+bench-resolv := \
+  inet_ntop_ipv4 \
+  inet_ntop_ipv6 \
+  # bench-resolv
 
 LDLIBS-bench-pthread-mutex-lock += -lm
 LDLIBS-bench-pthread-mutex-trylock += -lm
@@ -172,6 +227,7 @@ string-benchset := \
   strcpy_chk \
   strcspn \
   strlen \
+  strlen-random \
   strncasecmp \
   strncat \
   strncmp \
@@ -254,6 +310,7 @@ hash-benchset := \
 
 stdlib-benchset := \
   arc4random \
+  bsearch \
   random-lock \
   strtod \
   # stdlib-benchset
@@ -288,6 +345,10 @@ CFLAGS-bench-fmax.c += -fno-builtin
 CFLAGS-bench-fmaxf.c += -fno-builtin
 CFLAGS-bench-trunc.c += -fno-builtin
 CFLAGS-bench-truncf.c += -fno-builtin
+CFLAGS-bench-fmod.c += -fno-builtin
+CFLAGS-bench-fmodf.c += -fno-builtin
+CFLAGS-bench-remainder.c += -fno-builtin
+CFLAGS-bench-remainderf.c += -fno-builtin
 CFLAGS-bench-roundeven.c += -fno-builtin
 CFLAGS-bench-roundevenf.c += -fno-builtin
 CFLAGS-bench-isnan.c += $(config-cflags-signaling-nans)
@@ -296,11 +357,16 @@ CFLAGS-bench-isfinite.c += $(config-cflags-signaling-nans)
 
 ifeq (${BENCHSET},)
 bench-malloc := \
+  calloc-simple \
+  calloc-tcache \
+  calloc-thread \
   malloc-simple \
+  malloc-tcache \
   malloc-thread \
   # bench-malloc
 else
 bench-malloc := $(filter malloc-%,${BENCHSET})
+bench-malloc += $(filter calloc-%,${BENCHSET})
 endif
 
 ifeq (${STATIC-BENCHTESTS},yes)
@@ -378,6 +444,7 @@ ifeq (${BENCHSET},)
 bench := \
   $(bench-math) \
   $(bench-pthread) \
+  $(bench-resolv) \
   $(bench-string) \
   # bench
 else
@@ -416,9 +483,14 @@ ifneq ($(strip ${BENCHSET}),)
 VALIDBENCHSETNAMES := \
   bench-math \
   bench-pthread \
+  bench-resolv \
   bench-string \
+  calloc-simple \
+  calloc-tcache \
+  calloc-thread \
   hash-benchset \
   malloc-simple \
+  malloc-tcache \
   malloc-thread \
   math-benchset \
   stdio-benchset \
@@ -457,8 +529,13 @@ bench-set: $(binaries-benchset)
 bench-malloc: $(binaries-bench-malloc)
 	for run in $^; do \
 	  echo "$${run}"; \
-	  if [ `basename $${run}` = "bench-malloc-thread" ]; then \
+	  if basename $${run} | grep -q "bench-[cm]alloc-thread"; then \
 		for thr in 1 8 16 32; do \
+			echo "Running $${run} $${thr}"; \
+			$(run-bench) $${thr} > $${run}-$${thr}.out; \
+		done;\
+	  elif basename $${run} | grep -q "bench-[cm]alloc-tcache"; then \
+		for thr in 64 512 1024; do \
 			echo "Running $${run} $${thr}"; \
 			$(run-bench) $${thr} > $${run}-$${thr}.out; \
 		done;\

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2024 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -149,6 +149,7 @@ __execvpe_common (const char *file, char *const argv[], char *const envp[],
 	     up finding no executable we can use, we want to diagnose
 	     that we did find one but were denied access.  */
 	    got_eacces = true;
+	    [[fallthrough]];
 	  case ENOENT:
 	  case ESTALE:
 	  case ENOTDIR:

@@ -1,5 +1,5 @@
 /* Thread termination.
-   Copyright (C) 2000-2024 Free Software Foundation, Inc.
+   Copyright (C) 2000-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@
 #include <pthreadP.h>
 
 #include <atomic.h>
-
+#include <shlib-compat.h>
 
 /* Terminate the current thread and make STATUS available to any
    thread that might join it.  */
@@ -112,4 +112,9 @@ __pthread_exit (void *status)
   abort ();
 }
 
-weak_alias (__pthread_exit, pthread_exit);
+libc_hidden_def (__pthread_exit)
+versioned_symbol (libc, __pthread_exit, pthread_exit, GLIBC_2_21);
+
+#if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_12, GLIBC_2_21)
+compat_symbol (libpthread, __pthread_exit, pthread_exit, GLIBC_2_12);
+#endif

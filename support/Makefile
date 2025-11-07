@@ -1,5 +1,5 @@
 # Makefile for support library, used only at build and test time
-# Copyright (C) 2016-2024 Free Software Foundation, Inc.
+# Copyright (C) 2016-2025 Free Software Foundation, Inc.
 # This file is part of the GNU C Library.
 
 # The GNU C Library is free software; you can redistribute it and/or
@@ -66,6 +66,7 @@ libsupport-routines = \
   support_format_netent \
   support_fuse \
   support_isolate_in_subprocess \
+  support_mem_access \
   support_mutex_pi_monotonic \
   support_need_proc \
   support_open_and_compare_file_bytes \
@@ -128,11 +129,13 @@ libsupport-routines = \
   xcopy_file_range \
   xdlfcn \
   xdlmopen \
+  xdup \
   xdup2 \
   xfchmod \
   xfclose \
   xfdopendir \
   xfgets \
+  xfmemopen \
   xfopen \
   xfork \
   xfread \
@@ -280,6 +283,11 @@ CFLAGS-temp_file.c += -D_FILE_OFFSET_BITS=64 -D_TIME_BITS=64
 
 ifeq (,$(CXX))
 LINKS_DSO_PROGRAM = links-dso-program-c
+LDLIBS-links-dso-program-c = -lgcc
+ifeq ($(have-libgcc_s),yes)
+CFLAGS-links-dso-program-c.c += -fexceptions
+LDLIBS-links-dso-program-c += -lgcc_s $(libunwind)
+endif
 else
 LINKS_DSO_PROGRAM = links-dso-program
 LDLIBS-links-dso-program = -lstdc++ -lgcc -lgcc_s $(libunwind)
@@ -324,7 +332,9 @@ tests = \
   README-testing \
   tst-support-namespace \
   tst-support-open-dev-null-range \
+  tst-support-openpty \
   tst-support-process_state \
+  tst-support_accept_oom \
   tst-support_blob_repeat \
   tst-support_capture_subprocess \
   tst-support_descriptors \
@@ -344,6 +354,10 @@ tests = \
   tst-xreadlink \
   tst-xsigstack \
   # tests
+
+tests-container = \
+  tst-support-openpty-c \
+  # tests-container
 
 ifeq ($(run-built-tests),yes)
 tests-special = \

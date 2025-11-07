@@ -1,6 +1,6 @@
 /* Data structure for communication from the run-time dynamic linker for
    loaded ELF shared objects.
-   Copyright (C) 1995-2024 Free Software Foundation, Inc.
+   Copyright (C) 1995-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -364,6 +364,8 @@ struct auditstate
 /* This is the hidden instance of struct r_debug_extended used by the
    dynamic linker.  */
 extern struct r_debug_extended _r_debug_extended attribute_hidden;
+
+rtld_hidden_proto (_r_debug)
 
 #if __ELF_NATIVE_CLASS == 32
 # define symbind symbind32

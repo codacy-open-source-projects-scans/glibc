@@ -456,7 +456,7 @@ getkeyserv_handle (int vers)
       return kcp->client;
     }
 
-  if ((kcp->client == (CLIENT *) NULL))
+  if (kcp->client == (CLIENT *) NULL)
     /* Use the AF_UNIX transport */
     kcp->client = clnt_create ("/var/run/keyservsock", KEY_PROG, vers, "unix");
 
@@ -542,7 +542,7 @@ key_call (u_long proc, xdrproc_t xdr_arg, char *arg,
   else if (proc == KEY_GEN && __key_gendes_LOCAL)
     {
       des_block *res;
-      res = (*__key_gendes_LOCAL) (__geteuid (), 0);
+      res = (*__key_gendes_LOCAL) (__geteuid (), NULL);
       *(des_block *) rslt = *res;
       return 1;
     }

@@ -1,4 +1,4 @@
-/* Copyright (C) 1991-2024 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -59,6 +59,13 @@ extern void *memccpy (void *__restrict __dest, const void *__restrict __src,
 
 /* Set N bytes of S to C.  */
 extern void *memset (void *__s, int __c, size_t __n) __THROW __nonnull ((1));
+
+#if defined __USE_MISC || __GLIBC_USE (ISOC23)
+/* Like memset, but the compiler will not delete a call to this
+   function, even if S is dead after the call.  */
+extern void *memset_explicit (void *__s, int __c, size_t __n)
+     __THROW __nonnull ((1)) __fortified_attr_access (__write_only__, 1, 3);
+#endif
 
 /* Compare N bytes of S1 and S2.  */
 extern int memcmp (const void *__s1, const void *__s2, size_t __n)

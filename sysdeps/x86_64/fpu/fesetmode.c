@@ -1,5 +1,5 @@
 /* Install given floating-point control modes.  x86_64 version.
-   Copyright (C) 2016-2024 Free Software Foundation, Inc.
+   Copyright (C) 2016-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -28,7 +28,7 @@ fesetmode (const femode_t *modep)
 {
   fpu_control_t cw;
   unsigned int mxcsr;
-  __asm__ ("stmxcsr %0" : "=m" (mxcsr));
+  __asm__ ("%vstmxcsr %0" : "=m" (mxcsr));
   /* Preserve SSE exception flags but restore other state in
      MXCSR.  */
   mxcsr &= FE_ALL_EXCEPT_X86;
@@ -45,6 +45,6 @@ fesetmode (const femode_t *modep)
       mxcsr |= modep->__mxcsr & ~FE_ALL_EXCEPT_X86;
     }
   _FPU_SETCW (cw);
-  __asm__ ("ldmxcsr %0" : : "m" (mxcsr));
+  __asm__ ("%vldmxcsr %0" : : "m" (mxcsr));
   return 0;
 }

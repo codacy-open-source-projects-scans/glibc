@@ -1,4 +1,4 @@
-/* Copyright (C) 1996-2024 Free Software Foundation, Inc.
+/* Copyright (C) 1996-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -157,19 +157,15 @@ __merge_einval (LOOKUP_TYPE *a,
 
 #define CHECK_MERGE(err, status)		\
   ({						\
-    do						\
+    if (err)					\
       {						\
-	if (err)				\
-	  {					\
-	    __set_errno (err);			\
-	    if (err == ERANGE)			\
-	      status = NSS_STATUS_TRYAGAIN;	\
-	    else				\
-	      status = NSS_STATUS_UNAVAIL;	\
-	    break;				\
-	  }					\
+	__set_errno (err);			\
+	if (err == ERANGE)			\
+	  status = NSS_STATUS_TRYAGAIN;		\
+	else					\
+	  status = NSS_STATUS_UNAVAIL;		\
+	break;					\
       }						\
-    while (0);					\
   })
 
 /* Type of the lookup function we need here.  */

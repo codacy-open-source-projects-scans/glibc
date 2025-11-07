@@ -1,4 +1,4 @@
-/* Copyright (C) 2012-2024 Free Software Foundation, Inc.
+/* Copyright (C) 2012-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -40,6 +40,8 @@ static char SETGID_CHILD[] = "setgid-child";
 # define PROFILE_LIB      "tst-sonamemove-runmod2.so"
 #endif
 
+#define LD_DEBUG_OUTPUT   "/tmp/some-file"
+
 struct envvar_t
 {
   const char *env;
@@ -61,7 +63,7 @@ static const struct envvar_t filtered_envvars[] =
   { "MALLOC_TRIM_THRESHOLD_",  FILTERED_VALUE },
   { "RES_OPTIONS",             FILTERED_VALUE },
   { "LD_DEBUG",                "all" },
-  { "LD_DEBUG_OUTPUT",         "/tmp/some-file" },
+  { "LD_DEBUG_OUTPUT",         LD_DEBUG_OUTPUT },
   { "LD_WARN",                 FILTERED_VALUE },
   { "LD_VERBOSE",              FILTERED_VALUE },
   { "LD_BIND_NOW",             "0" },
@@ -73,6 +75,14 @@ static const struct envvar_t unfiltered_envvars[] =
   /* Non longer supported option.  */
   { "LD_ASSUME_KERNEL",        UNFILTERED_VALUE },
 };
+
+static void
+unlink_ld_debug_output (pid_t pid)
+{
+  char *output = xasprintf ("%s.%d", LD_DEBUG_OUTPUT, pid);
+  unlink (output);
+  free (output);
+}
 
 static int
 test_child (void)
@@ -138,19 +148,24 @@ do_test (int argc, char **argv)
   /* Setgid child process.  */
   if (argc == 2 && strcmp (argv[1], SETGID_CHILD) == 0)
     {
+      pid_t ppid = getppid ();
+
       if (getgid () == getegid ())
-	/* This can happen if the file system is mounted nosuid.  */
-	FAIL_UNSUPPORTED ("SGID failed: GID and EGID match (%jd)\n",
-			  (intmax_t) getgid ());
+	{
+	  /* This can happen if the file system is mounted nosuid.  */
+	  unlink_ld_debug_output (ppid);
+
+	  FAIL_UNSUPPORTED ("SGID failed: GID and EGID match (%jd)\n",
+			    (intmax_t) getgid ());
+	}
 
       int ret = test_child ();
 
+      unlink_ld_debug_output (ppid);
+
       if (ret != 0)
 	exit (1);
-
-      /* Special return code to make sure that the child executed all the way
-	 through.  */
-      exit (42);
+      return 0;
     }
   else
     {
@@ -174,17 +189,7 @@ do_test (int argc, char **argv)
 	free (profilepath);
       }
 
-      int status = support_capture_subprogram_self_sgid (SETGID_CHILD);
-
-      if (WEXITSTATUS (status) == EXIT_UNSUPPORTED)
-	exit (EXIT_UNSUPPORTED);
-
-      if (WEXITSTATUS (status) != 42)
-	{
-	  printf ("    child failed with status %d\n",
-		  WEXITSTATUS (status));
-	  support_record_failure ();
-	}
+      support_capture_subprogram_self_sgid (SETGID_CHILD);
 
       return 0;
     }

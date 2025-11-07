@@ -1,4 +1,4 @@
-/* Copyright (C) 1994-2024 Free Software Foundation, Inc.
+/* Copyright (C) 1994-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -77,6 +77,7 @@ __getdelim (char **lineptr, size_t *n, int delimiter, FILE *fp)
       if (__underflow (fp) == EOF)
 	{
 	  result = -1;
+	  (*lineptr)[0] = '\0';
 	  goto unlock_return;
 	}
       len = fp->_IO_read_end - fp->_IO_read_ptr;

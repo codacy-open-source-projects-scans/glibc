@@ -1,5 +1,5 @@
 /* Configuration for math routines.
-   Copyright (C) 2017-2024 Free Software Foundation, Inc.
+   Copyright (C) 2017-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@
 #include <math_private.h>
 #include <nan-high-order-bit.h>
 #include <stdint.h>
+#include <stdbit.h>
 
 #ifndef WANT_ROUNDING
 /* Correct special case results in non-nearest rounding modes.  */
@@ -56,6 +57,58 @@ roundtoint (double_t x);
 static inline int32_t
 converttoint (double_t x);
 #endif
+
+#ifndef ROUNDEVEN_INTRINSICS
+/* When set, roundeven_finite will route to the internal roundeven function.  */
+# define ROUNDEVEN_INTRINSICS 1
+#endif
+
+/* Round x to nearest integer value in floating-point format, rounding halfway
+  cases to even.  If the input is non finite the result is unspecified.  */
+static inline double
+roundeven_finite (double x)
+{
+  if (!isfinite (x))
+    __builtin_unreachable ();
+#if ROUNDEVEN_INTRINSICS
+  return roundeven (x);
+#else
+  double y = round (x);
+  if (fabs (x - y) == 0.5)
+    {
+      union { double f; uint64_t i; } u = {y};
+      union { double f; uint64_t i; } v = {y - copysign (1.0, x)};
+      if (stdc_trailing_zeros (v.i) > stdc_trailing_zeros (u.i))
+        y = v.f;
+    }
+  return y;
+#endif
+}
+
+#ifndef ROUNDEVENF_INTRINSICS
+/* When set, roundevenf_finite will route to the internal roundevenf function.  */
+# define ROUNDEVENF_INTRINSICS 1
+#endif
+
+static inline float
+roundevenf_finite (float x)
+{
+  if (!isfinite (x))
+    __builtin_unreachable ();
+#if ROUNDEVENF_INTRINSICS
+  return roundevenf (x);
+#else
+  float y = roundf (x);
+  if (fabs (x - y) == 0.5)
+    {
+      union { float f; uint32_t i; } u = {y};
+      union { float f; uint32_t i; } v = {y - copysignf (1.0f, x)};
+      if (stdc_trailing_zeros (v.i) > stdc_trailing_zeros (u.i))
+        y = v.f;
+    }
+  return y;
+#endif
+}
 
 static inline uint32_t
 asuint (float f)
@@ -113,11 +166,12 @@ issignalingf_inline (float x)
 #define BIT_WIDTH       32
 #define MANTISSA_WIDTH  23
 #define EXPONENT_WIDTH  8
-#define MANTISSA_MASK   0x007fffff
-#define EXPONENT_MASK   0x7f800000
-#define EXP_MANT_MASK   0x7fffffff
-#define QUIET_NAN_MASK  0x00400000
-#define SIGN_MASK       0x80000000
+#define EXPONENT_BIAS   127
+#define MANTISSA_MASK   UINT32_C (0x007fffff)
+#define EXPONENT_MASK   UINT32_C (0x7f800000)
+#define EXP_MANT_MASK   UINT32_C (0x7fffffff)
+#define QUIET_NAN_MASK  UINT32_C (0x00400000)
+#define SIGN_MASK       UINT32_C (0x80000000)
 
 static inline bool
 is_nan (uint32_t x)
@@ -125,10 +179,22 @@ is_nan (uint32_t x)
   return (x & EXP_MANT_MASK) > EXPONENT_MASK;
 }
 
+static inline bool
+is_inf (uint32_t x)
+{
+  return (x << 1) == (EXPONENT_MASK << 1);
+}
+
 static inline uint32_t
 get_mantissa (uint32_t x)
 {
   return x & MANTISSA_MASK;
+}
+
+static inline int
+get_exponent (uint32_t x)
+{
+  return (int)((x >> MANTISSA_WIDTH & 0xff) - EXPONENT_BIAS);
 }
 
 /* Convert integer number X, unbiased exponent EP, and sign S to double:
@@ -156,7 +222,10 @@ attribute_hidden float __math_uflowf (uint32_t);
 attribute_hidden float __math_may_uflowf (uint32_t);
 attribute_hidden float __math_divzerof (uint32_t);
 attribute_hidden float __math_invalidf (float);
+attribute_hidden int __math_invalidf_i (int);
+attribute_hidden long int __math_invalidf_li (long int);
 attribute_hidden float __math_edomf (float x);
+attribute_hidden float __math_erangef (float x);
 
 /* Shared between expf, exp2f, exp10f, and powf.  */
 #define EXP2F_TABLE_BITS 5

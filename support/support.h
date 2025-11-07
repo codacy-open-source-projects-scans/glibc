@@ -1,5 +1,5 @@
 /* Common extra functions.
-   Copyright (C) 2016-2024 Free Software Foundation, Inc.
+   Copyright (C) 2016-2025 Free Software Foundation, Inc.
    Copyright The GNU Toolchain Authors.
    This file is part of the GNU C Library.
 
@@ -113,7 +113,7 @@ void *xposix_memalign (size_t alignment, size_t n)
   __attribute_malloc__ __attribute_alloc_align__ ((1))
   __attribute_alloc_size__ ((2)) __attr_dealloc_free __returns_nonnull;
 char *xasprintf (const char *format, ...)
-  __attribute__ ((format (printf, 1, 2), malloc)) __attr_dealloc_free
+  __attribute__ ((format (printf, 1, 2), __malloc__)) __attr_dealloc_free
   __returns_nonnull;
 char *xstrdup (const char *) __attr_dealloc_free __returns_nonnull;
 char *xstrndup (const char *, size_t) __attr_dealloc_free __returns_nonnull;
@@ -238,6 +238,15 @@ int support_open_dev_null_range (int num, int flags, mode_t mode);
 
 /* Check if kernel supports set VMA range name.  */
 extern bool support_set_vma_name_supported (void);
+
+/* If invoked with a true argument, it instructs the supervising
+   process to ignore unexpected termination of the test process,
+   likely due to an OOM error.  (This can theoretically mask other
+   test errors, so it should be used sparingly.)
+
+   If invoked with a false argument, the default behavior is restored,
+   and OOM-induced errors result in test failure.  */
+void support_accept_oom (bool);
 
 __END_DECLS
 

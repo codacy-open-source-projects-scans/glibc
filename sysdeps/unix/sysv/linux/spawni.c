@@ -1,5 +1,5 @@
 /* POSIX spawn interface.  Linux version.
-   Copyright (C) 2016-2024 Free Software Foundation, Inc.
+   Copyright (C) 2016-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -115,7 +115,7 @@ __spawni_child (void *arguments)
   memset (&sa, '\0', sizeof (sa));
 
   sigset_t hset;
-  __sigprocmask (SIG_BLOCK, 0, &hset);
+  __sigprocmask (SIG_BLOCK, NULL, &hset);
   for (int sig = 1; sig < _NSIG; ++sig)
     {
       if ((attr->__flags & POSIX_SPAWN_SETSIGDEF)
@@ -129,7 +129,7 @@ __spawni_child (void *arguments)
 	    sa.sa_handler = SIG_IGN;
 	  else
 	    {
-	      __libc_sigaction (sig, 0, &sa);
+	      __libc_sigaction (sig, NULL, &sa);
 	      if (sa.sa_handler == SIG_IGN || sa.sa_handler == SIG_DFL)
 		continue;
 	      sa.sa_handler = SIG_DFL;
@@ -138,7 +138,7 @@ __spawni_child (void *arguments)
       else
 	continue;
 
-      __libc_sigaction (sig, &sa, 0);
+      __libc_sigaction (sig, &sa, NULL);
     }
 
 #ifdef _POSIX_PRIORITY_SCHEDULING
@@ -172,7 +172,7 @@ __spawni_child (void *arguments)
     goto fail;
 
   /* Execute the file actions.  */
-  if (file_actions != 0)
+  if (file_actions != NULL)
     {
       int cnt;
       struct rlimit64 fdlimit;
@@ -348,9 +348,6 @@ __spawnix (int *pid, const char *file,
 	return errno;
       }
 
-  int prot = (PROT_READ | PROT_WRITE
-	     | ((GL (dl_stack_flags) & PF_X) ? PROT_EXEC : 0));
-
   /* Add a slack area for child's stack.  */
   size_t argv_size = (argc * sizeof (void *)) + 512;
   /* We need at least a few pages in case the compiler's stack checking is
@@ -361,7 +358,7 @@ __spawnix (int *pid, const char *file,
      where it might use about 1k extra stack space).  */
   argv_size += (32 * 1024);
   size_t stack_size = ALIGN_UP (argv_size, GLRO(dl_pagesize));
-  void *stack = __mmap (NULL, stack_size, prot,
+  void *stack = __mmap (NULL, stack_size, GL (dl_stack_prot_flags),
 			MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
   if (__glibc_unlikely (stack == MAP_FAILED))
     return errno;

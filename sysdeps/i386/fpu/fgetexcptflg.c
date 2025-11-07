@@ -1,5 +1,5 @@
 /* Store current representation for exceptions.
-   Copyright (C) 1997-2024 Free Software Foundation, Inc.
+   Copyright (C) 1997-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -19,7 +19,6 @@
 #include <fenv.h>
 #include <unistd.h>
 #include <ldsodefs.h>
-#include <dl-procinfo.h>
 
 
 int
@@ -28,7 +27,7 @@ __fegetexceptflag (fexcept_t *flagp, int excepts)
   fexcept_t temp;
 
   /* Get the current exceptions.  */
-  __asm__ ("fnstsw %0" : "=m" (*&temp));
+  __asm__ ("fnstsw %0" : "=m" (temp));
 
   *flagp = temp & excepts & FE_ALL_EXCEPT;
 
@@ -38,7 +37,7 @@ __fegetexceptflag (fexcept_t *flagp, int excepts)
       unsigned int sse_exc;
 
       /* Get the current MXCSR.  */
-      __asm__ ("stmxcsr %0" : "=m" (*&sse_exc));
+      __asm__ ("%vstmxcsr %0" : "=m" (sse_exc));
 
       *flagp |= sse_exc & excepts & FE_ALL_EXCEPT;
     }

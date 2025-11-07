@@ -1,5 +1,5 @@
 /* Compute x * y + z as ternary operation.
-   Copyright (C) 2010-2024 Free Software Foundation, Inc.
+   Copyright (C) 2010-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -50,13 +50,13 @@ __fma (double x, double y, double z)
     return (double) temp + z;
 
   union ieee854_long_double u;
-  feholdexcept (&env);
-  fesetround (FE_TOWARDZERO);
+  __feholdexcept (&env);
+  __fesetround (FE_TOWARDZERO);
   /* Perform addition with round to odd.  */
   u.d = temp + (long double) z;
   if ((u.ieee.mantissa3 & 1) == 0 && u.ieee.exponent != 0x7fff)
-    u.ieee.mantissa3 |= fetestexcept (FE_INEXACT) != 0;
-  feupdateenv (&env);
+    u.ieee.mantissa3 |= __fetestexcept (FE_INEXACT) != 0;
+  __feupdateenv (&env);
   /* And finally truncation with round to nearest.  */
   return (double) u.d;
 #endif /* ! USE_FMA_BUILTIN  */

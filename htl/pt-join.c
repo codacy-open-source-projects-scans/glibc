@@ -1,5 +1,5 @@
 /* Wait for thread termination.
-   Copyright (C) 2000-2024 Free Software Foundation, Inc.
+   Copyright (C) 2000-2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -21,6 +21,8 @@
 #include <stddef.h>
 
 #include <pt-internal.h>
+#include <shlib-compat.h>
+#include <ldsodefs.h>
 
 /* Make calling thread wait for termination of thread THREAD.  Return
    the exit status of the thread in *STATUS.  */
@@ -49,12 +51,18 @@ __pthread_join_common (pthread_t thread, void **status, int try,
 
       /* Rely on pthread_cond_wait being a cancellation point to make
 	 pthread_join one too.  */
-      while (pthread->state == PTHREAD_JOINABLE && err != ETIMEDOUT)
+      while (pthread->state == PTHREAD_JOINABLE && err != ETIMEDOUT && err != EINVAL)
 	err = __pthread_cond_clockwait (&pthread->state_cond,
 					&pthread->state_lock,
 					clockid, abstime);
 
       pthread_cleanup_pop (0);
+
+      if (err == EINVAL)
+	{
+	  __pthread_mutex_unlock (&pthread->state_lock);
+	  return err;
+	}
     }
 
   switch (pthread->state)
@@ -90,14 +98,24 @@ __pthread_join (pthread_t thread, void **status)
 {
   return __pthread_join_common (thread, status, 0, CLOCK_REALTIME, NULL);
 }
-weak_alias (__pthread_join, pthread_join);
+libc_hidden_def (__pthread_join)
+versioned_symbol (libc, __pthread_join, pthread_join, GLIBC_2_43);
+
+#if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_12, GLIBC_2_43)
+compat_symbol (libc, __pthread_join, pthread_join, GLIBC_2_12);
+#endif
 
 int
 __pthread_tryjoin_np (pthread_t thread, void **status)
 {
   return __pthread_join_common (thread, status, 1, CLOCK_REALTIME, NULL);
 }
-weak_alias (__pthread_tryjoin_np, pthread_tryjoin_np);
+libc_hidden_def (__pthread_tryjoin_np)
+versioned_symbol (libc, __pthread_tryjoin_np, pthread_tryjoin_np, GLIBC_2_43);
+
+#if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_32, GLIBC_2_43)
+compat_symbol (libc, __pthread_tryjoin_np, pthread_tryjoin_np, GLIBC_2_32);
+#endif
 
 int
 __pthread_timedjoin_np (pthread_t thread, void **status,
@@ -105,7 +123,12 @@ __pthread_timedjoin_np (pthread_t thread, void **status,
 {
   return __pthread_join_common (thread, status, 0, CLOCK_REALTIME, abstime);
 }
-weak_alias (__pthread_timedjoin_np, pthread_timedjoin_np);
+libc_hidden_def (__pthread_timedjoin_np)
+versioned_symbol (libc, __pthread_timedjoin_np, pthread_timedjoin_np, GLIBC_2_43);
+
+#if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_32, GLIBC_2_43)
+compat_symbol (libc, __pthread_timedjoin_np, pthread_timedjoin_np, GLIBC_2_32);
+#endif
 
 int
 __pthread_clockjoin_np (pthread_t thread, void **status,
@@ -114,4 +137,9 @@ __pthread_clockjoin_np (pthread_t thread, void **status,
 {
   return __pthread_join_common (thread, status, 0, clockid, abstime);
 }
-weak_alias (__pthread_clockjoin_np, pthread_clockjoin_np);
+libc_hidden_def (__pthread_clockjoin_np)
+versioned_symbol (libc, __pthread_clockjoin_np, pthread_clockjoin_np, GLIBC_2_43);
+
+#if OTHER_SHLIB_COMPAT (libpthread, GLIBC_2_32, GLIBC_2_43)
+compat_symbol (libc, __pthread_clockjoin_np, pthread_clockjoin_np, GLIBC_2_32);
+#endif

@@ -354,7 +354,7 @@ this function is in @file{stdlib.h}.
 @c that's protected by list_lock; next_free is only modified while
 @c list_lock is held too.  All other data members of an arena, as well
 @c as the metadata of the memory areas assigned to it, are only modified
-@c while holding the arena's mutex (fastbin pointers use catomic ops
+@c while holding the arena's mutex (fastbin pointers use atomic ops
 @c because they may be modified by free without taking the arena's
 @c lock).  Some reassurance was needed for fastbins, for it wasn't clear
 @c how they were initialized.  It turns out they are always
@@ -383,7 +383,7 @@ this function is in @file{stdlib.h}.
 @c     mutex_lock (arena lock) dup @asulock @aculock [returns locked]
 @c    __get_nprocs ext ok @acsfd
 @c    NARENAS_FROM_NCORES ok
-@c    catomic_compare_and_exchange_bool_acq ok
+@c    atomic_compare_and_exchange_bool_acq ok
 @c    _int_new_arena ok @asulock @aculock @acsmem
 @c     new_heap ok @acsmem
 @c      mmap ok @acsmem
@@ -397,7 +397,7 @@ this function is in @file{stdlib.h}.
 @c     mutex_lock (list_lock) dup @asulock @aculock
 @c     atomic_write_barrier ok
 @c     mutex_unlock (list_lock) @aculock
-@c    catomic_decrement ok
+@c    atomic_fetch_add ok
 @c    reused_arena @asulock @aculock
 @c      reads&writes next_to_use and iterates over arena next without guards
 @c      those are harmless as long as we don't drop arenas from the
@@ -414,7 +414,7 @@ this function is in @file{stdlib.h}.
 @c   get_max_fast ok
 @c   fastbin_index ok
 @c   fastbin ok
-@c   catomic_compare_and_exhange_val_acq ok
+@c   atomic_compare_and_exhange_val_acq ok
 @c   malloc_printerr dup @mtsenv
 @c     if we get to it, we're toast already, undefined behavior must have
 @c     been invoked before
@@ -521,10 +521,9 @@ this function is in @file{stdlib.h}.
 @c     chunk2mem dup ok
 @c     free_perturb ok
 @c     set_fastchunks ok
-@c      catomic_and ok
 @c     fastbin_index dup ok
 @c     fastbin dup ok
-@c     catomic_compare_and_exchange_val_rel ok
+@c     atomic_compare_and_exchange_val_rel ok
 @c     chunk_is_mmapped ok
 @c     contiguous dup ok
 @c     prev_inuse ok
@@ -706,7 +705,7 @@ The prototype for this function is in @file{stdlib.h}.
 @safety{@prelim{}@mtsafe{}@asunsafe{@asulock{}}@acunsafe{@aculock{} @acsfd{} @acsmem{}}}
 @c __libc_free @asulock @aculock @acsfd @acsmem
 @c   releasing memory into fastbins modifies the arena without taking
-@c   its mutex, but catomic operations ensure safety.  If two (or more)
+@c   its mutex, but atomic operations ensure safety.  If two (or more)
 @c   threads are running malloc and have their own arenas locked when
 @c   each gets a signal whose handler free()s large (non-fastbin-able)
 @c   blocks from each other's arena, we deadlock; this is a more general
@@ -842,8 +841,8 @@ is left undisturbed.
 @end deftypefun
 
 @deftypefun {void *} reallocarray (void *@var{ptr}, size_t @var{nmemb}, size_t @var{size})
-@standards{BSD, malloc.h}
-@standards{BSD, stdlib.h}
+@standards{POSIX.1-2024, malloc.h}
+@standards{POSIX.1-2024, stdlib.h}
 @safety{@prelim{}@mtsafe{}@asunsafe{@asulock{}}@acunsafe{@aculock{} @acsfd{} @acsmem{}}}
 
 The @code{reallocarray} function changes the size of the block whose address
@@ -856,8 +855,8 @@ returning a null pointer, and leaving the original block unchanged.
 @code{reallocarray} should be used instead of @code{realloc} when the new size
 of the allocated block is the result of a multiplication that might overflow.
 
-@strong{Portability Note:} This function is not part of any standard.  It was
-first introduced in OpenBSD 5.6.
+This function was originally derived from OpenBSD 5.6, but was added in
+POSIX.1-2024.
 @end deftypefun
 
 Like @code{malloc}, @code{realloc} and @code{reallocarray} may return a null
@@ -1134,6 +1133,61 @@ subsystem.
 
 The @code{valloc} function is obsolete and @code{aligned_alloc} or
 @code{posix_memalign} should be used instead.
+@end deftypefun
+
+You can determine the alignment of a pointer with the
+@code{memalignment} function.
+
+@deftypefun size_t memalignment (void *@var{p})
+@standards{C23, stdlib.h}
+@safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
+
+This function, defined in C23, returns the alignment of @var{p}, as a
+power of two.  If @var{p} is a null pointer, it returns zero.  C23
+requires @var{p} to be a valid pointer to an object or a null pointer;
+as a GNU extension, @theglibc{} supports this function on arbitrary
+bit patterns of pointer type.
+
+This function was added to the C23 standard to support unconventional
+platforms where a pointer's low-order bits are unrelated to alignment.
+For conventional platforms, one can instead cast the pointer to
+@code{uintptr_t} and then test the low order bits:
+this is portable to pre-C23 and is typically a bit faster.
+
+For example, if you want to read an @code{int}
+addressed by possibly-misaligned pointer @code{p},
+the following pre-C23 code works on all conventional platforms:
+
+@smallexample
+int i;
+if (((uintptr_t) p & (alignof (int) - 1)) != 0)
+  memcpy (&i, p, sizeof i);
+else
+  i = *p;
+@end smallexample
+
+However, it might not work on unconventional platforms, where one
+would need something like the following C23 code:
+
+@smallexample
+int i;
+if (memalignment (p) < alignof (int))
+  memcpy (&i, p, sizeof i);
+else
+  i = *p;
+@end smallexample
+
+However, for this particular case, performance does not improve if
+different code is used for aligned and unaligned pointers,
+and the following code is preferable:
+
+@smallexample
+int i;
+memcpy (&i, p, sizeof i);
+@end smallexample
+
+The compiler will generate the most efficient way to access unaligned
+data for the architecture, optimizing away the @code{memcpy} call.
 @end deftypefun
 
 @node Malloc Tunable Parameters
@@ -1413,7 +1467,7 @@ This is the total size of memory allocated with @code{sbrk} by
 
 @item size_t ordblks
 This is the number of chunks not in use.  (The memory allocator
-size_ternally gets chunks of memory from the operating system, and then
+internally gets chunks of memory from the operating system, and then
 carves them up to satisfy individual @code{malloc} requests;
 @pxref{The GNU Allocator}.)
 
@@ -3077,7 +3131,7 @@ returned by @code{mmap} or @code{mmap64}.
 @cindex memory protection key
 @cindex protection key
 @cindex MPK
-On some systems, further restrictions can be added to specific pages
+On some systems, further access restrictions can be added to specific pages
 using @dfn{memory protection keys}.  These restrictions work as follows:
 
 @itemize @bullet
@@ -3089,27 +3143,27 @@ during memory accesses.  New keys can be allocated with the
 @code{pkey_mprotect}.
 
 @item
-Each thread has a set of separate access right restriction for each
-protection key.  These access rights can be manipulated using the
+Each thread has a set of separate access restrictions for each
+protection key.  These access restrictions can be manipulated using the
 @code{pkey_set} and @code{pkey_get} functions.
 
 @item
 During a memory access, the system obtains the protection key for the
-accessed page and uses that to determine the applicable access rights,
+accessed page and uses that to determine the applicable access restrictions,
 as configured for the current thread.  If the access is restricted, a
 segmentation fault is the result ((@pxref{Program Error Signals}).
 These checks happen in addition to the @code{PROT_}* protection flags
 set by @code{mprotect} or @code{pkey_mprotect}.
 @end itemize
 
-New threads and subprocesses inherit the access rights of the current
+New threads and subprocesses inherit the access restrictions of the current
 thread.  If a protection key is allocated subsequently, existing threads
 (except the current) will use an unspecified system default for the
-access rights associated with newly allocated keys.
+access restrictions associated with newly allocated keys.
 
-Upon entering a signal handler, the system resets the access rights of
+Upon entering a signal handler, the system resets the access restrictions of
 the current thread so that pages with the default key can be accessed,
-but the access rights for other protection keys are unspecified.
+but the access restrictions for other protection keys are unspecified.
 
 Applications are expected to allocate a key once using
 @code{pkey_alloc}, and apply the key to memory regions which need
@@ -3139,7 +3193,7 @@ used to temporarily acquire access to the memory region and relinquish
 it again:
 
 @smallexample
-  if (key >= 0 && pkey_set (key, 0) < 0)
+  if (key >= 0 && pkey_set (key, PKEY_UNRESTRICTED) < 0)
     ...; /* Perform error checking (generally fatal).  */
   /* At this point, the current thread has read-write access to the
      memory region.  */
@@ -3151,24 +3205,24 @@ it again:
 
 In this example, a negative key value indicates that no key had been
 allocated, which means that the system lacks support for memory
-protection keys and it is not necessary to change the the access rights
+protection keys and it is not necessary to change the the access restrictions
 of the current thread (because it always has access).
 
 Compared to using @code{mprotect} to change the page protection flags,
 this approach has two advantages: It is thread-safe in the sense that
-the access rights are only changed for the current thread, so another
-thread which changes its own access rights concurrently to gain access
-to the mapping will not suddenly see its access rights revoked.  And
+the access restrictions are only changed for the current thread, so another
+thread which changes its own access restrictions concurrently to gain access
+to the mapping will not suddenly see its access restrictions updated.  And
 @code{pkey_set} typically does not involve a call into the kernel and a
 context switch, so it is more efficient.
 
-@deftypefun int pkey_alloc (unsigned int @var{flags}, unsigned int @var{restrictions})
+@deftypefun int pkey_alloc (unsigned int @var{flags}, unsigned int @var{access_restrictions})
 @standards{Linux, sys/mman.h}
 @safety{@prelim{}@mtsafe{}@assafe{}@acunsafe{@acucorrupt{}}}
 Allocate a new protection key.  The @var{flags} argument is reserved and
-must be zero.  The @var{restrictions} argument specifies access rights
+must be zero.  The @var{access_restrictions} argument specifies access restrictions
 which are applied to the current thread (as if with @code{pkey_set}
-below).  Access rights of other threads are not changed.
+below).  Access restrictions of other threads are not changed.
 
 The function returns the new protection key, a non-negative number, or
 @math{-1} on error.
@@ -3183,7 +3237,7 @@ The system does not implement memory protection keys.
 @item EINVAL
 The @var{flags} argument is not zero.
 
-The @var{restrictions} argument is invalid.
+The @var{access_restrictions} argument is invalid.
 
 The system does not implement memory protection keys or runs in a mode
 in which memory protection keys are disabled.
@@ -3203,7 +3257,7 @@ in which memory protection keys are disabled.
 Deallocate the protection key, so that it can be reused by
 @code{pkey_alloc}.
 
-Calling this function does not change the access rights of the freed
+Calling this function does not change the access restrictions of the freed
 protection key.  The calling thread and other threads may retain access
 to it, even if it is subsequently allocated again.  For this reason, it
 is not recommended to call the @code{pkey_free} function.
@@ -3251,16 +3305,22 @@ not @math{-1}.
 @end table
 @end deftypefun
 
-@deftypefun int pkey_set (int @var{key}, unsigned int @var{rights})
+@deftypefun int pkey_set (int @var{key}, unsigned int @var{access_restrictions})
 @standards{Linux, sys/mman.h}
 @safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
-Change the access rights of the current thread for memory pages with the
-protection key @var{key} to @var{rights}.  If @var{rights} is zero, no
-additional access restrictions on top of the page protection flags are
-applied.  Otherwise, @var{rights} is a combination of the following
-flags:
+Change the access restrictions of the current thread for memory pages with
+the protection key @var{key} to @var{access_restrictions}.  If
+@var{access_restrictions} is @code{PKEY_UNRESTRICTED} (zero), no additional
+access restrictions on top of the page protection flags are applied.  Otherwise,
+@var{access_restrictions} is a combination of the following flags:
 
 @vtable @code
+@item PKEY_DISABLE_READ
+@standards{Linux, sys/mman.h}
+Subsequent attempts to read from memory with the specified protection
+key will fault.  At present only AArch64 platforms with enabled Stage 1
+permission overlays feature support this type of restriction.
+
 @item PKEY_DISABLE_WRITE
 @standards{Linux, sys/mman.h}
 Subsequent attempts to write to memory with the specified protection
@@ -3269,7 +3329,15 @@ key will fault.
 @item PKEY_DISABLE_ACCESS
 @standards{Linux, sys/mman.h}
 Subsequent attempts to write to or read from memory with the specified
-protection key will fault.
+protection key will fault.  On AArch64 platforms with enabled Stage 1
+permission overlays feature this restriction value has the same effect
+as combination of @code{PKEY_DISABLE_READ} and @code{PKEY_DISABLE_WRITE}.
+
+@item PKEY_DISABLE_EXECUTE
+@standards{Linux, sys/mman.h}
+Subsequent attempts to execute from memory with the specified protection
+key will fault.  At present only AArch64 platforms with enabled Stage 1
+permission overlays feature support this type of restriction.
 @end vtable
 
 Operations not specified as flags are not restricted.  In particular,
@@ -3290,17 +3358,21 @@ function:
 
 @table @code
 @item EINVAL
-The system does not support the access rights restrictions expressed in
-the @var{rights} argument.
+The system does not support the access restrictions expressed in
+the @var{access_restrictions} argument.
 @end table
 @end deftypefun
 
 @deftypefun int pkey_get (int @var{key})
 @standards{Linux, sys/mman.h}
 @safety{@prelim{}@mtsafe{}@assafe{}@acsafe{}}
-Return the access rights of the current thread for memory pages with
-protection key @var{key}.  The return value is zero or a combination of
+Return the access restrictions of the current thread for memory pages
+with protection key @var{key}.  The return value is zero or a combination of
 the @code{PKEY_DISABLE_}* flags; see the @code{pkey_set} function.
+
+The returned value should be checked for presence or absence of specific flags
+using bitwise operations.  Comparing the returned value with any of the flags
+or their combination using equals will almost certainly fail.
 
 Calling the @code{pkey_get} function with a protection key which was not
 allocated by @code{pkey_alloc} results in undefined behavior.  This

@@ -205,7 +205,7 @@ b64_pton (char const *src, u_char *target, size_t targsize)
 			break;
 
 		pos = strchr(Base64, ch);
-		if (pos == 0) 		/* A non-base64 character. */
+		if (pos == NULL) 		/* A non-base64 character. */
 			return (-1);
 
 		switch (state) {
@@ -275,7 +275,7 @@ b64_pton (char const *src, u_char *target, size_t targsize)
 				return (-1);
 			ch = *src++;		/* Skip the = */
 			/* Fall through to "single trailing =" case. */
-			/* FALLTHROUGH */
+			[[fallthrough]];
 
 		case 3:		/* Valid, means two bytes of info */
 			/*
