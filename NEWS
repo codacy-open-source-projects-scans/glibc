@@ -21,6 +21,11 @@ Major new features:
   platforms supporting _Float128) _Float128_t, introduced in TS
   18661-3:2015, have been added to <math.h>.
 
+* On Linux, the mseal function has been added.  It allows for sealing
+  memory mappings to prevent further changes during process execution,
+  such as changes to protection permissions, unmapping, relocation to
+  another location, or shrinking the size.
+
 Deprecated and removed features, and other changes affecting compatibility:
 
 * Support for dumped heaps has been removed - malloc_set_state() now always
@@ -29,6 +34,13 @@ Deprecated and removed features, and other changes affecting compatibility:
 * The uimaxabs function has been renamed to umaxabs, following a change
   to the name of that function in ISO C2Y.  The old function continues
   to exist as a compatibility symbol for old binaries.
+
+* The fromfp, fromfpx, ufromfp and ufromfpx functions, and the
+  corresponding functions for other floating-point types, now return
+  their result in the same type as their floating-point argument, rather
+  than intmax_t or uintmax_t, in accordance with a change to the
+  definition of these functions in ISO C23.  Existing binaries that use
+  the versions returning intmax_t or uintmax_t will continue to work.
 
 Changes to build and runtime requirements:
 

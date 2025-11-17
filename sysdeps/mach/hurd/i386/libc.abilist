@@ -33,6 +33,9 @@ GLIBC_2.12 __pthread_key_create F
 GLIBC_2.12 __pthread_kill F
 GLIBC_2.12 __pthread_mutex_transfer_np F
 GLIBC_2.12 __pthread_self F
+GLIBC_2.12 flockfile F
+GLIBC_2.12 ftrylockfile F
+GLIBC_2.12 funlockfile F
 GLIBC_2.12 pthread_attr_destroy F
 GLIBC_2.12 pthread_attr_getdetachstate F
 GLIBC_2.12 pthread_attr_getguardsize F
@@ -2748,15 +2751,10 @@ GLIBC_2.9 ns_name_skip F
 GLIBC_2.9 ns_name_uncompress F
 GLIBC_2.9 ns_name_unpack F
 GLIBC_2.9 pipe2 F
-HURD_CTHREADS_0.3 __cthread_getspecific F
-HURD_CTHREADS_0.3 __cthread_keycreate F
-HURD_CTHREADS_0.3 __cthread_setspecific F
 HURD_CTHREADS_0.3 __mutex_init F
 HURD_CTHREADS_0.3 __mutex_lock F
-HURD_CTHREADS_0.3 __mutex_lock_solid F
 HURD_CTHREADS_0.3 __mutex_trylock F
 HURD_CTHREADS_0.3 __mutex_unlock F
-HURD_CTHREADS_0.3 __mutex_unlock_solid F
 HURD_CTHREADS_0.3 __pthread_detach F
 HURD_CTHREADS_0.3 __pthread_getattr_np F
 HURD_CTHREADS_0.3 __spin_lock F

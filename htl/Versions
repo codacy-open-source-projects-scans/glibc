@@ -1,6 +1,7 @@
 libc {
 
   GLIBC_2.12 {
+    flockfile; ftrylockfile; funlockfile;
     pthread_self;
     __pthread_get_cleanup_stack;
     __pthread_key_create;
@@ -246,8 +247,6 @@ libc {
 
   GLIBC_PRIVATE {
     __libc_alloca_cutoff;
-    __libc_pthread_init;
-    __pthread_cleanup_stack;
     __pthread_total;
     ___pthread_self;
     __pthread_alloc;
@@ -312,24 +311,7 @@ libc {
 }
 
 libpthread {
-  GLIBC_2.2.6 {
-    _IO_flockfile; _IO_ftrylockfile; _IO_funlockfile;
-    __errno_location; __h_errno_location;
-  }
   GLIBC_2.12 {
-    cthread_detach;
-    cthread_fork;
-    cthread_keycreate;
-    cthread_getspecific;
-    cthread_setspecific;
-    __mutex_lock_solid;
-    __mutex_unlock_solid;
-    _cthreads_flockfile;
-    _cthreads_ftrylockfile;
-    _cthreads_funlockfile;
-
-    flockfile; ftrylockfile; funlockfile;
-
     pthread_atfork;
 
     pthread_create;
@@ -362,12 +344,7 @@ libpthread {
   GLIBC_PRIVATE {
     __pthread_initialize_minimal;
 
-    __cthread_detach;
-    __cthread_fork;
     __pthread_create;
-    __cthread_keycreate;
-    __cthread_getspecific;
-    __cthread_setspecific;
     __pthread_enable_asynccancel;
     __pthread_disable_asynccancel;
   }

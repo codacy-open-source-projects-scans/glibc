@@ -20,13 +20,12 @@ subdir := htl
 srcdir = .
 
 MICROKERNEL := mach
-SYSDEPS := lockfile
+SYSDEPS :=
 
 LCLHDRS :=
 
 libpthread-routines := \
   pt-create \
-  pt-initialize \
   pt-spin-inlines \
   pt-hurd-cond-wait \
   pt-hurd-cond-timedwait \
@@ -35,9 +34,6 @@ libpthread-routines := \
   pt-getname-np \
   pt-setname-np \
   cancellation \
-  cthreads-compat \
-  herrno \
-  $(SYSDEPS) \
   # libpthread-routine
 
 headers := \
@@ -71,9 +67,7 @@ distribute :=
 
 routines := \
   alloca_cutoff \
-  forward \
   htlfreeres \
-  libc_pthread_init \
   pt-alloc \
   pt-attr \
   pt-attr-destroy \
@@ -212,7 +206,6 @@ routines := \
   sem_routines \
   sem_unlink \
   # routines
-shared-only-routines = forward
 
 extra-libs := libpthread
 extra-libs-others := $(extra-libs)
@@ -220,8 +213,6 @@ install-lib := libpthread.so
 install-lib-ldscripts := libpthread_syms.a
 
 include ../Makeconfig
-
-CFLAGS-lockfile.c = -D_IO_MTSAFE_IO
 
 all: # Make this the default target; it will be defined in Rules.
 

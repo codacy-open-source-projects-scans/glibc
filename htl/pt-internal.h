@@ -192,13 +192,7 @@ libc_hidden_proto (__pthread_max_threads)
 #ifndef _pthread_self
 extern struct __pthread *_pthread_self (void);
 #endif
-
-/* Stores the stack of cleanup handlers for the thread.  */
-extern __thread struct __pthread_cancelation_handler *__pthread_cleanup_stack;
 
-
-/* Initialize the pthreads library.  */
-extern void ___pthread_init (void);
 
 /* Internal version of pthread_create.  Rather than return the new
    tid, we return the whole __pthread structure in *PTHREAD.  */
@@ -349,7 +343,7 @@ libc_hidden_proto (__pthread_default_condattr)
    See nptl implementation for the details.  */
 struct new_sem
 {
-#if __HAVE_64B_ATOMICS
+#if USE_64B_ATOMICS
   /* The data field holds both value (in the least-significant 32 bits) and
      nwaiters.  */
 # if __BYTE_ORDER == __LITTLE_ENDIAN
