@@ -220,6 +220,8 @@ acosh 0x1.07c956p+0
 acosh 0x1.1808eep+0
 acosh 0x1.1052c4p+0
 acosh 0x1.0800751d9facbp+0
+acosh 0x1.08000c1e79fp+0
+acosh 0x1.080016353964ep+0
 # the next value generates larger error bounds on x86_64 (ldbl-96)
 acosh 0x1.1ecbdf374bce01cap+0
 # the next value generates larger error bounds on x86_64 (binary128)
@@ -894,6 +896,7 @@ atanh -0x3.98eaf4p-4
 atanh 0x2.c1085p-4
 atanh 0x1p-500
 atanh 0x1p-5000
+atanh 0x1.658802e5e2da7p-2
 # the next value generates larger error bounds in libmvec/avx512 on x86_64
 # (binary32)
 atanh 0x1.f80094p-8
