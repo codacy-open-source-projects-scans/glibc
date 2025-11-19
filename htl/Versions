@@ -127,7 +127,10 @@ libc {
     pthread_cond_init; pthread_cond_signal; pthread_cond_wait;
     pthread_cond_timedwait;
     pthread_equal;
-    pthread_exit; pthread_getschedparam; pthread_setschedparam;
+    pthread_exit;
+    pthread_hurd_cond_wait_np;
+    pthread_hurd_cond_timedwait_np;
+    pthread_getschedparam; pthread_setschedparam;
     pthread_mutex_destroy; pthread_mutex_init;
     pthread_mutex_lock; pthread_mutex_unlock;
     pthread_self; pthread_setcancelstate; pthread_setcanceltype;
@@ -155,6 +158,11 @@ libc {
     pthread_timedjoin_np; pthread_tryjoin_np;
 
     sem_clockwait;
+  }
+
+  GLIBC_2.40 {
+    pthread_getname_np;
+    pthread_setname_np;
   }
 
   GLIBC_2.41 {
@@ -225,10 +233,14 @@ libc {
     pthread_getattr_np;
     pthread_getconcurrency;
     pthread_getcpuclockid;
+    pthread_getname_np;
+    pthread_hurd_cond_wait_np;
+    pthread_hurd_cond_timedwait_np;
     pthread_join;
     pthread_kill;
     pthread_mutex_transfer_np;
     pthread_setconcurrency;
+    pthread_setname_np;
     pthread_setschedprio;
     pthread_testcancel;
     pthread_timedjoin_np;
@@ -317,6 +329,10 @@ libc {
 }
 
 libpthread {
+  GLIBC_2.2.6 {
+    __libpthread_version_placeholder;
+  }
+
   GLIBC_2.12 {
     pthread_atfork;
 
@@ -327,8 +343,7 @@ libpthread {
     _pthread_spin_lock;
   }
   GLIBC_2.21 {
-    pthread_hurd_cond_wait_np;
-    pthread_hurd_cond_timedwait_np;
+    __libpthread_version_placeholder;
   }
 
   GLIBC_2.32 {
@@ -341,7 +356,6 @@ libpthread {
   }
 
   GLIBC_2.40 {
-    pthread_getname_np;
-    pthread_setname_np;
+    __libpthread_version_placeholder;
   }
 }

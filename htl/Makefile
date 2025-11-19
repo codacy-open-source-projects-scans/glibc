@@ -26,11 +26,7 @@ LCLHDRS :=
 
 libpthread-routines := \
   pt-spin-inlines \
-  pt-hurd-cond-wait \
-  pt-hurd-cond-timedwait \
   pt-spin \
-  pt-getname-np \
-  pt-setname-np \
   # libpthread-routine
 
 headers := \
@@ -122,8 +118,11 @@ routines := \
   pt-getattr \
   pt-getconcurrency \
   pt-getcpuclockid \
+  pt-getname-np \
   pt-getschedparam \
   pt-getspecific \
+  pt-hurd-cond-timedwait \
+  pt-hurd-cond-wait \
   pt-init-specific \
   pt-join \
   pt-key-create \
@@ -174,6 +173,7 @@ routines := \
   pt-setcancelstate \
   pt-setcanceltype \
   pt-setconcurrency \
+  pt-setname-np \
   pt-setschedparam \
   pt-setschedprio \
   pt-setspecific \
