@@ -39,12 +39,24 @@ Major new features:
   been imported from the CORE-MATH project, in particular acosh, asinh,
   atanh, erf, erfc, lgamma, and tgamma.
 
-* Optimized implementations for remainder, remaindef, frexpf, frexp,
-  frexpl (binary128), and frexpl (intel96) have been added.
+* Optimized implementations for fma, fmaf, remainder, remaindef, frexpf,
+  frexp, frexpl (binary128), and frexpl (intel96) have been added.
 
 * The SVID handling for acosf, acoshf, asinhf, atan2f, atanhf, coshf,
   lgammaf/lgammaf_r, log10f, sinhf, sqrtf, tgammaf, y0/j0, y1/j1, and yn/jn
   were moved to compat symbols, allowing improvements in performance.
+
+* The ISO C23 optional time base TIME_MONOTONIC, TIME_ACTIVE, and
+  TIME_THREAD_ACTIVE have been added.
+
+* Experimental support for building with clang has been added.  It requires
+  at least clang version 18, aarch64-linux-gnu or x86_64-linux-gnu
+  targets, and libgcc compatible runtime (including libgcc_s.so for
+  pthread cancellation and backtrace runtime support).
+
+* On Linux, the openat2 function has been added.  It is an extension of
+  openat and provides a superset of its functionality.  It is supported only
+  in LFS mode and it is a cancellable entrypoint.
 
 Deprecated and removed features, and other changes affecting compatibility:
 

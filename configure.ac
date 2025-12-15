@@ -585,7 +585,7 @@ AC_CHECK_PROG_VER(BISON, bison, --version,
 # Require GCC 12.1 to build.
 AC_CACHE_CHECK([if $CC is sufficient to build libc], libc_cv_compiler_ok, [
 AC_PREPROC_IFELSE([AC_LANG_PROGRAM([[]], [[
-#if !defined __GNUC__ || __GNUC__ < 12 || (__GNUC__ == 12 && __GNUC_MINOR__ < 1)
+#if (!defined __GNUC__ || __GNUC__ < 12 || (__GNUC__ == 12 && __GNUC_MINOR__ < 1)) && (!defined __clang__ || __clang_major__ < 18)
 #error insufficient compiler
 #endif]])],
 	       [libc_cv_compiler_ok=yes],
@@ -1328,9 +1328,9 @@ if test $libc_cv_as_noexecstack = yes; then
 fi
 AC_SUBST(ASFLAGS_config)
 
-LIBC_LINKER_FEATURE([--no-error-execstack], [-Wl,--no-error-execstack],
-		    [libc_cv_no_error_execstack=yes], [libc_cv_no_error_execstack=no])
-AC_SUBST(libc_cv_no_error_execstack)
+LIBC_TEST_LINKER_FEATURE([--no-error-execstack], [-Wl,--no-error-execstack],
+		    [libc_cv_test_no_error_execstack=yes], [libc_cv_test_no_error_execstack=no])
+AC_SUBST(libc_cv_test_no_error_execstack)
 
 LIBC_LINKER_FEATURE([-z execstack], [-Wl,-z,execstack],
 		    [libc_cv_z_execstack=yes], [libc_cv_z_execstack=no])
@@ -1340,9 +1340,9 @@ LIBC_LINKER_FEATURE([-z start-stop-gc], [-Wl,-z,start-stop-gc],
 		    [libc_cv_z_start_stop_gc=yes], [libc_cv_z_start_stop_gc=no])
 LIBC_CONFIG_VAR([have-z-start-stop-gc], [$libc_cv_z_start_stop_gc])
 
-LIBC_LINKER_FEATURE([--depaudit], [-Wl,--depaudit,x],
-		    [libc_cv_depaudit=yes], [libc_cv_depaudit=no])
-LIBC_CONFIG_VAR([have-depaudit], [$libc_cv_depaudit])
+LIBC_TEST_LINKER_FEATURE([--depaudit], [-Wl,--depaudit,x],
+			 [libc_cv_test_depaudit=yes], [libc_cv_test_depaudit=no])
+LIBC_CONFIG_VAR([have-depaudit], [$libc_cv_test_depaudit])
 
 LIBC_LINKER_FEATURE([-z pack-relative-relocs],
 		    [-Wl,-z,pack-relative-relocs],
@@ -1369,6 +1369,22 @@ LIBC_TRY_CC_OPTION([-fpie], [libc_cv_fpie=yes], [libc_cv_fpie=no])
 ])
 
 AC_SUBST(libc_cv_fpie)
+
+dnl Check how to suppress C23-qualifier-generic const warnings.  GCC has
+dnl -Wno-discarded-qualifiers, while clang -Wno-incompatible-pointer-types-discards-qualifiers
+AC_CACHE_CHECK(for -Wno-discarded-qualifiers, libc_cv_cflags_wno_discarded_qualifiers, [dnl
+LIBC_TRY_CC_OPTION([-Werror -Wno-discarded-qualifiers],
+		   [libc_cv_cflags_wno_discarded_qualifiers=-Wno-discarded-qualifiers],
+		   [libc_cv_cflags_wno_discarded_qualifiers=])
+if test -z "$libc_cv_cflags_wno_discarded_qualifiers"; then
+  LIBC_TRY_CC_OPTION([-Werror -Wno-incompatible-pointer-types-discards-qualifiers],
+		     [libc_cv_cflags_wno_incompatible_pointer_type_discards_qualifiers=-Wno-incompatible-pointer-types-discards-qualifiers],
+		     [libc_cv_cflags_wno_incompatible_pointer_type_discards_qualifiers=])
+  libc_cv_cflags_wno_discarded_qualifiers=$libc_cv_cflags_wno_incompatible_pointer_type_discards_qualifiers
+fi
+])
+LIBC_CONFIG_VAR([config-cflags-wno-discarded-qualifiers],
+		[$libc_cv_cflags_wno_discarded_qualifiers])
 
 AC_CACHE_CHECK(for GLOB_DAT reloc,
 	       libc_cv_has_glob_dat, [dnl
@@ -1419,30 +1435,6 @@ LIBC_TRY_TEST_CC_COMMAND([for traditional tls support],
   [libc_cv_test_mtls_traditional=no])
 LIBC_CONFIG_VAR([have-test-mtls-traditional],
 		[$libc_cv_test_mtls_traditional])
-
-dnl clang emits an warning for a double alias redirection, to warn the
-dnl original symbol is sed even when weak definition overrides it.
-dnl It is a usual pattern for weak_alias, where multiple alias point to
-dnl same symbol.
-conftest_code="
-void __foo (void)
-{
-}
-extern __typeof (__foo) foo __attribute__ ((weak, alias (\"__foo\")));
-extern __typeof (__foo) bar __attribute__ ((weak, alias (\"foo\")));
-"
-LIBC_TRY_CC_AND_TEST_CC_COMMAND([if -Wno-ignored-attributes is required for aliases],
-  [$conftest_code],
-  [-c -Werror -Wno-ignored-attributes],
-  libc_cv_wno_ignored_attributes,
-  [libc_cv_wno_ignored_attributes="-Wno-ignored-attributes"],
-  [libc_cv_wno_ignored_attributes=],
-  libc_cv_test_wno_ignored_attributes,
-  [libc_cv_test_wno_ignored_attributes="-Wno-ignored-attributes"],
-  [libc_cv_test_wno_ignored_attributes=])
-LIBC_CONFIG_VAR([config-cflags-wno-ignored-attributes],
-		[$libc_cv_wno_ignored_attributes])
-AC_SUBST(libc_cv_test_wno_ignored_attributes)
 
 AC_CACHE_CHECK([for -Wno-maybe-uninitialized],
                 libc_cv_wno_maybe_uninitialized, [dnl

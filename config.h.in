@@ -222,6 +222,9 @@
 /* An integer used to scale the timeout of test programs.  */
 #define TIMEOUTFACTOR 1
 
+/* Define if __builtin_fmod/__builtin_remainder is inlined on x86.  */
+#undef HAVE_X86_INLINE_FMOD
+
 /*
  */
 
@@ -296,6 +299,9 @@
 /* Define if SFrame v2 is enabled.  */
 #define ENABLE_SFRAME 0
 
+/* Define if unaligned 64-bit atomic operations are supported.  */
+#undef	HAVE_UNALIGNED_64B_ATOMICS
+
 /* The default value of x86 CET control.  */
 #define DEFAULT_DL_X86_CET_CONTROL cet_elf_property
 
@@ -320,7 +326,7 @@
 /* Define if compiler allows add attribute after function declaration.  */
 #undef ATTR_AFTER_FUNC_DECL
 
-/* Define if compiler suport __attribute__ ((mode (__libgcc_cmp_return__))).  */
+/* Define if compiler support __attribute__ ((mode (__libgcc_cmp_return__))).  */
 #undef HAVE_X86_LIBGCC_CMP_RETURN_ATTR
 
 #endif

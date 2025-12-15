@@ -476,7 +476,10 @@ endif
 # XXX Please note that for now we ignore the result of this test.
 tests-special += $(objpfx)annexc.out
 ifeq ($(run-built-tests),yes)
-tests-special += $(objpfx)tst-getconf.out
+tests-special += \
+  $(objpfx)tst-getconf-limits.out \
+  $(objpfx)tst-getconf.out \
+  # tests-special
 ifeq (yes,$(build-shared))
 ifneq ($(PERL),no)
 tests-special += \
@@ -568,9 +571,9 @@ $(objpfx)config-name.h: $(..)scripts/config-uname.sh $(common-objpfx)config.make
 
 CFLAGS-pause.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-pread.c += -fexceptions -fasynchronous-unwind-tables
-CFLAGS-pread64.c += -fexceptions -fasynchronous-unwind-tables $(config-cflags-wno-ignored-attributes)
+CFLAGS-pread64.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-pwrite.c += -fexceptions -fasynchronous-unwind-tables
-CFLAGS-pwrite64.c += -fexceptions -fasynchronous-unwind-tables $(config-cflags-wno-ignored-attributes)
+CFLAGS-pwrite64.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-sleep.c += -fexceptions
 CFLAGS-wait.c += -fexceptions -fasynchronous-unwind-tables
 CFLAGS-waitid.c += -fexceptions -fasynchronous-unwind-tables
@@ -599,7 +602,7 @@ CFLAGS-execl.os = -fomit-frame-pointer
 CFLAGS-execvp.os = -fomit-frame-pointer
 CFLAGS-execlp.os = -fomit-frame-pointer
 CFLAGS-nanosleep.c += -fexceptions -fasynchronous-unwind-tables
-CFLAGS-fork.c = $(libio-mtsafe) $(config-cflags-wno-ignored-attributes)
+CFLAGS-fork.c = $(libio-mtsafe)
 
 tstgetopt-ARGS = -a -b -cfoobar --required foobar --optional=bazbug \
 		--none random --col --color --colour
@@ -728,6 +731,16 @@ $(objpfx)tst-boost-mem.out: $(objpfx)tst-boost.out
 $(objpfx)tst-getconf.out: tst-getconf.sh $(objpfx)getconf
 	$(SHELL) $< $(common-objpfx) '$(built-program-cmd)'; \
 	$(evaluate-test)
+
+$(objpfx)tst-getconf-limits.out: tst-getconf-limits.py $(objpfx)getconf
+	PYTHONPATH=../scripts \
+	$(PYTHON) tst-getconf-limits.py \
+		   --cc="$(CC) $(patsubst -DMODULE_NAME=%, \
+					  -DMODULE_NAME=testsuite, \
+					  $(CPPFLAGS)) -D_ISOMAC" \
+		   '$(built-program-cmd)' \
+	< /dev/null > $@ 2>&1; $(evaluate-test)
+
 
 $(objpfx)bug-ga2-mem.out: $(objpfx)bug-ga2.out
 	{ test -r $(objpfx)bug-ga2.mtrace \

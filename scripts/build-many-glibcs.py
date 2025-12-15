@@ -33,6 +33,14 @@ check out (<component>-<version), for 'checkout', or, for actions
 other than 'checkout' and 'bot-cycle', name configurations for which
 compilers or glibc are to be built.
 
+It is possible to override the URL used to download tarballs during
+the checkout process using environment variable FTP_GNU_ORG_MIRROR
+that will replace default URL 'https://ftp.gnu.org'.
+
+It is also possible to use different Git URL for cloning sources
+from a Git repository using a <component>_GIT_MIRROR environment
+variable (<component> should be upper case, e.g. GLIBC).
+
 The 'list-compilers' command prints the name of each available
 compiler configuration, without building anything.  The 'list-glibcs'
 command prints the name of each glibc compiler configuration, followed
@@ -104,6 +112,23 @@ except:
 
     subprocess.run = _run
 
+def get_git_url(component):
+    """Return Git URL for the given component. Allow overrides via env var."""
+    git_urls = {
+        'binutils': 'https://sourceware.org/git/binutils-gdb.git',
+        'glibc': 'https://sourceware.org/git/glibc.git',
+        'gcc': 'https://gcc.gnu.org/git/gcc.git',
+        'gnumach': 'https://git.savannah.gnu.org/git/hurd/gnumach.git',
+        'mig': 'https://git.savannah.gnu.org/git/hurd/mig.git',
+        'hurd': 'https://git.savannah.gnu.org/git/hurd/hurd.git',
+    }
+    env_var = '%s_GIT_MIRROR' % component.upper()
+    if env_var in os.environ:
+        return os.environ[env_var]
+    if component in git_urls:
+        return git_urls[component]
+    else:
+        raise RuntimeError('unknown component')
 
 class Context(object):
     """The global state associated with builds in a given directory."""
@@ -840,7 +865,7 @@ class Context(object):
                             'gcc': 'vcs-15',
                             'glibc': 'vcs-mainline',
                             'gmp': '6.3.0',
-                            'linux': '6.17',
+                            'linux': '6.18',
                             'mpc': '1.3.1',
                             'mpfr': '4.2.2',
                             'mig': 'vcs-mainline',
@@ -901,7 +926,7 @@ class Context(object):
         """Check out the given version of the given component from version
         control.  Return a revision identifier."""
         if component == 'binutils':
-            git_url = 'https://sourceware.org/git/binutils-gdb.git'
+            git_url = get_git_url(component)
             if version == 'mainline':
                 git_branch = 'master'
             else:
@@ -915,7 +940,7 @@ class Context(object):
                 branch = 'releases/gcc-%s' % version
             return self.gcc_checkout(branch, update)
         elif component == 'glibc':
-            git_url = 'https://sourceware.org/git/glibc.git'
+            git_url = get_git_url(component)
             if version == 'mainline':
                 git_branch = 'master'
             else:
@@ -924,21 +949,21 @@ class Context(object):
             self.fix_glibc_timestamps()
             return r
         elif component == 'gnumach':
-            git_url = 'git://git.savannah.gnu.org/hurd/gnumach.git'
+            git_url = get_git_url(component)
             git_branch = 'master'
             r = self.git_checkout(component, git_url, git_branch, update)
             subprocess.run(['autoreconf', '-i'],
                            cwd=self.component_srcdir(component), check=True)
             return r
         elif component == 'mig':
-            git_url = 'git://git.savannah.gnu.org/hurd/mig.git'
+            git_url = get_git_url(component)
             git_branch = 'master'
             r = self.git_checkout(component, git_url, git_branch, update)
             subprocess.run(['autoreconf', '-i'],
                            cwd=self.component_srcdir(component), check=True)
             return r
         elif component == 'hurd':
-            git_url = 'git://git.savannah.gnu.org/hurd/hurd.git'
+            git_url = get_git_url(component)
             git_branch = 'master'
             r = self.git_checkout(component, git_url, git_branch, update)
             subprocess.run(['autoconf'],
@@ -954,8 +979,20 @@ class Context(object):
             subprocess.run(['git', 'remote', 'prune', 'origin'],
                            cwd=self.component_srcdir(component), check=True)
             if self.replace_sources:
+                subprocess.run(['git', 'remote', 'set-url', 'origin', git_url],
+                               cwd=self.component_srcdir(component), check=True)
                 subprocess.run(['git', 'clean', '-dxfq'],
                                cwd=self.component_srcdir(component), check=True)
+            else:
+                r = subprocess.run(['git', 'remote', 'get-url', 'origin'],
+                                   cwd=self.component_srcdir(component),
+                                   stdout=subprocess.PIPE,
+                                   check=True, universal_newlines=True).stdout
+                if r.rstrip() != git_url:
+                    print('error: origin url has changed from %s to %s, '
+                          'use --replace-sources to check out again' %
+                          (r.rstrip(), git_url))
+                    exit(1)
             subprocess.run(['git', 'pull', '-q'],
                            cwd=self.component_srcdir(component), check=True)
         else:
@@ -1004,7 +1041,7 @@ class Context(object):
             shutil.rmtree(self.component_srcdir('gcc'))
             update = False
         if not update:
-            self.git_checkout('gcc', 'https://gcc.gnu.org/git/gcc.git',
+            self.git_checkout('gcc', get_git_url('gcc'),
                               branch, update)
         subprocess.run(['contrib/gcc_update', '--silent'],
                        cwd=self.component_srcdir('gcc'), check=True)
@@ -1019,23 +1056,29 @@ class Context(object):
         tarball."""
         if update:
             return
-        url_map = {'binutils': 'https://ftp.gnu.org/gnu/binutils/binutils-%(version)s.tar.bz2',
-                   'gcc': 'https://ftp.gnu.org/gnu/gcc/gcc-%(version)s/gcc-%(version)s.tar.gz',
-                   'gmp': 'https://ftp.gnu.org/gnu/gmp/gmp-%(version)s.tar.xz',
-                   'linux': 'https://www.kernel.org/pub/linux/kernel/v%(major)s.x/linux-%(version)s.tar.xz',
-                   'mpc': 'https://ftp.gnu.org/gnu/mpc/mpc-%(version)s.tar.gz',
-                   'mpfr': 'https://ftp.gnu.org/gnu/mpfr/mpfr-%(version)s.tar.xz',
-                   'mig': 'https://ftp.gnu.org/gnu/mig/mig-%(version)s.tar.bz2',
-                   'gnumach': 'https://ftp.gnu.org/gnu/gnumach/gnumach-%(version)s.tar.bz2',
-                   'hurd': 'https://ftp.gnu.org/gnu/hurd/hurd-%(version)s.tar.bz2'}
+        url_map = {
+            'binutils': '%(baseurl)s/gnu/binutils/binutils-%(version)s.tar.bz2',
+            'gcc': '%(baseurl)s/gnu/gcc/gcc-%(version)s/gcc-%(version)s.tar.gz',
+            'gmp': '%(baseurl)s/gnu/gmp/gmp-%(version)s.tar.xz',
+            'linux': 'https://www.kernel.org/pub/linux/kernel/v%(major)s.x/linux-%(version)s.tar.xz',
+            'mpc': '%(baseurl)s/gnu/mpc/mpc-%(version)s.tar.gz',
+            'mpfr': '%(baseurl)s/gnu/mpfr/mpfr-%(version)s.tar.xz',
+            'mig': '%(baseurl)s/gnu/mig/mig-%(version)s.tar.bz2',
+            'gnumach': '%(baseurl)s/gnu/gnumach/gnumach-%(version)s.tar.bz2',
+            'hurd': '%(baseurl)s/gnu/hurd/hurd-%(version)s.tar.bz2',
+        }
         if component not in url_map:
             print('error: component %s coming from tarball' % component)
             exit(1)
         version_major = version.split('.')[0]
-        url = url_map[component] % {'version': version, 'major': version_major}
+        baseurl = os.environ.get('FTP_GNU_ORG_MIRROR' , 'https://ftp.gnu.org').rstrip('/')
+        url = url_map[component] % {'version': version, 'major': version_major, 'baseurl': baseurl}
         filename = os.path.join(self.srcdir, url.split('/')[-1])
-        response = urllib.request.urlopen(url)
-        data = response.read()
+        try:
+            with urllib.request.urlopen(url) as response:
+                data = response.read()
+        except:
+            raise IOError('downloading ' + repr(url))
         with open(filename, 'wb') as f:
             f.write(data)
         subprocess.run(['tar', '-C', self.srcdir, '-x', '-f', filename],
