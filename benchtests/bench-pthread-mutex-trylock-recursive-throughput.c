@@ -1,4 +1,4 @@
-/* Measure pthread trylock throughput under high cache contention.
+/* Measure pthread trylock recursive throughput under high cache contention.
    Copyright (C) 2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
@@ -16,6 +16,6 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#define TEST_NAME "pthread-mutex-trylock-throughput"
-#define PTHREAD_MUTEX_TYPE_INITIALIZER PTHREAD_MUTEX_INITIALIZER
+#define TEST_NAME "pthread-mutex-trylock-recursive-throughput"
+#define PTHREAD_MUTEX_TYPE_INITIALIZER PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP
 #include "bench-pthread-mutex-trylock-base.c"
