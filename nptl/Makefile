@@ -277,6 +277,9 @@ tests = \
   tst-cancel17 \
   tst-cancel24 \
   tst-cancel31 \
+  tst-cancel33 \
+  tst-cancel34 \
+  tst-cleanup5 \
   tst-cond26 \
   tst-context1 \
   tst-default-attr \

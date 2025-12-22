@@ -1,5 +1,5 @@
-/* Atomic operations.  X86 version.
-   Copyright (C) 2018-2025 Free Software Foundation, Inc.
+/* Re-include the default memset implementation.
+   Copyright (C) 2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,9 +16,11 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#ifndef _X86_ATOMIC_MACHINE_H
-#define _X86_ATOMIC_MACHINE_H 1
+#include <string.h>
 
-#define atomic_spin_nop() __asm ("pause")
-
-#endif /* atomic-machine.h */
+#if IS_IN(libc)
+# define MEMSET __memset_generic
+# undef libc_hidden_builtin_def
+# define libc_hidden_builtin_def(x)
+#endif
+#include <string/memset.c>

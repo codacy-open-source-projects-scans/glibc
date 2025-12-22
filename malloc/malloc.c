@@ -178,7 +178,6 @@
     USE_MALLOC_LOCK            NOT defined
     MALLOC_DEBUG               NOT defined
     REALLOC_ZERO_BYTES_FREES   1
-    TRIM_FASTBINS              0
 
     Options for customizing MORECORE:
 
@@ -191,7 +190,6 @@
 
     Tuning options that are also dynamically changeable via mallopt:
 
-    DEFAULT_MXFAST             64 (for 32bit), 128 (for 64bit)
     DEFAULT_TRIM_THRESHOLD     128 * 1024
     DEFAULT_TOP_PAD            0
     DEFAULT_MMAP_THRESHOLD     128 * 1024
@@ -316,7 +314,7 @@
 
 /* This is another arbitrary limit, which tunables can change.  Each
    tcache bin will hold at most this number of chunks.  */
-# define TCACHE_FILL_COUNT 7
+# define TCACHE_FILL_COUNT 16
 
 /* Maximum chunks in tcache bins for tunables.  This value must fit the range
    of tcache->num_slots[] entries, else they may overflow.  */
@@ -325,7 +323,7 @@
 
 /* Safe-Linking:
    Use randomness from ASLR (mmap_base) to protect single-linked lists
-   of Fast-Bins and TCache.  That is, mask the "next" pointers of the
+   of TCache.  That is, mask the "next" pointers of the
    lists' chunks, and also perform allocation alignment checks on them.
    This mechanism reduces the risk of pointer hijacking, as was done with
    Safe-Unlinking in the double-linked lists of Small-Bins.
@@ -349,26 +347,6 @@
 
 #ifndef REALLOC_ZERO_BYTES_FREES
 #define REALLOC_ZERO_BYTES_FREES 1
-#endif
-
-/*
-  TRIM_FASTBINS controls whether free() of a very small chunk can
-  immediately lead to trimming. Setting to true (1) can reduce memory
-  footprint, but will almost always slow down programs that use a lot
-  of small chunks.
-
-  Define this only if you are willing to give up some speed to more
-  aggressively reduce system-level memory footprint when releasing
-  memory in programs that use many small chunks.  You can get
-  essentially the same effect by setting MXFAST to 0, but this can
-  lead to even greater slowdowns in programs using many small chunks.
-  TRIM_FASTBINS is an in-between compile-time option, that disables
-  only those chunks bordering topmost memory from being placed in
-  fastbins.
-*/
-
-#ifndef TRIM_FASTBINS
-#define TRIM_FASTBINS  0
 #endif
 
 /* Definition for getting more memory from the OS.  */
@@ -681,12 +659,9 @@ void*  __libc_valloc(size_t);
 
   arena:     current total non-mmapped bytes allocated from system
   ordblks:   the number of free chunks
-  smblks:    the number of fastbin blocks (i.e., small chunks that
-	       have been freed but not reused or consolidated)
   hblks:     current number of mmapped regions
   hblkhd:    total bytes held in mmapped regions
   usmblks:   always 0
-  fsmblks:   total bytes held in fastbin blocks
   uordblks:  current total allocated space (normal or mmapped)
   fordblks:  total free space
   keepcost:  the maximum number of bytes that could ideally be released
@@ -790,15 +765,14 @@ int      __posix_memalign(void **, size_t, size_t);
   corresponding parameter to the argument value if it can (i.e., so
   long as the value is meaningful), and returns 1 if successful else
   0.  SVID/XPG/ANSI defines four standard param numbers for mallopt,
-  normally defined in malloc.h.  Only one of these (M_MXFAST) is used
-  in this malloc. The others (M_NLBLKS, M_GRAIN, M_KEEP) don't apply,
-  so setting them has no effect. But this malloc also supports four
-  other options in mallopt. See below for details.  Briefly, supported
-  parameters are as follows (listed defaults are for "typical"
-  configurations).
+  normally defined in malloc.h. These params (M_MXFAST, M_NLBLKS, M_GRAIN,
+  M_KEEP) don't apply to our malloc, so setting them has no effect. But this
+  malloc also supports four other options in mallopt. See below for details.
+  Briefly, supported parameters are as follows (listed defaults are for
+  "typical" configurations).
 
   Symbol            param #   default    allowed param values
-  M_MXFAST          1         64         0-80  (0 disables fastbins)
+  M_MXFAST          1         64         0-80  (deprecated)
   M_TRIM_THRESHOLD -1         128*1024   any   (-1U disables trimming)
   M_TOP_PAD        -2         0          any
   M_MMAP_THRESHOLD -3         128*1024   any   (or 0 if no MMAP support)
@@ -810,41 +784,6 @@ libc_hidden_proto (__libc_mallopt)
 #endif
 
 /* mallopt tuning options */
-
-/*
-  M_MXFAST is the maximum request size used for "fastbins", special bins
-  that hold returned chunks without consolidating their spaces. This
-  enables future requests for chunks of the same size to be handled
-  very quickly, but can increase fragmentation, and thus increase the
-  overall memory footprint of a program.
-
-  This malloc manages fastbins very conservatively yet still
-  efficiently, so fragmentation is rarely a problem for values less
-  than or equal to the default.  The maximum supported value of MXFAST
-  is 80. You wouldn't want it any higher than this anyway.  Fastbins
-  are designed especially for use with many small structs, objects or
-  strings -- the default handles structs/objects/arrays with sizes up
-  to 8 4byte fields, or small strings representing words, tokens,
-  etc. Using fastbins for larger objects normally worsens
-  fragmentation without improving speed.
-
-  M_MXFAST is set in REQUEST size units. It is internally used in
-  chunksize units, which adds padding and alignment.  You can reduce
-  M_MXFAST to 0 to disable all use of fastbins.  This causes the malloc
-  algorithm to be a closer approximation of fifo-best-fit in all cases,
-  not just for larger requests, but will generally cause it to be
-  slower.
-*/
-
-
-/* M_MXFAST is a standard SVID/XPG tuning option, usually listed in malloc.h */
-#ifndef M_MXFAST
-#define M_MXFAST            1
-#endif
-
-#ifndef DEFAULT_MXFAST
-#define DEFAULT_MXFAST     (64 * SIZE_SZ / 4)
-#endif
 
 
 /*
@@ -892,11 +831,7 @@ libc_hidden_proto (__libc_mallopt)
   effect.  To disable trimming completely, you can set to
   (unsigned long)(-1)
 
-  Trim settings interact with fastbin (MXFAST) settings: Unless
-  TRIM_FASTBINS is defined, automatic trimming never takes place upon
-  freeing a chunk with size less than or equal to MXFAST. Trimming is
-  instead delayed until subsequent freeing of larger chunks. However,
-  you can still force an attempted trim by calling malloc_trim.
+  You can force an attempted trim by calling malloc_trim.
 
   Also, trimming is not generally possible in cases where
   the main arena is obtained via mmap.
@@ -1100,7 +1035,7 @@ static void _int_free_merge_chunk (mstate, mchunkptr, INTERNAL_SIZE_T);
 static INTERNAL_SIZE_T _int_free_create_chunk (mstate,
 					       mchunkptr, INTERNAL_SIZE_T,
 					       mchunkptr, INTERNAL_SIZE_T);
-static void _int_free_maybe_consolidate (mstate, INTERNAL_SIZE_T);
+static void _int_free_maybe_trim (mstate, INTERNAL_SIZE_T);
 static void*  _int_realloc(mstate, mchunkptr, INTERNAL_SIZE_T,
 			   INTERNAL_SIZE_T);
 static void*  _int_memalign(mstate, size_t, size_t);
@@ -1244,7 +1179,7 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
     deal with alignments etc but can be very confusing when trying
     to extend or adapt this code.
 
-    The three exceptions to all this are:
+    The two exceptions to all this are:
 
      1. The special chunk `top' doesn't bother using the
 	trailing size field since there is no next contiguous chunk
@@ -1260,10 +1195,6 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	to a freed chunk).  The M bit is also used for chunks which
 	originally came from a dumped heap via malloc_set_state in
 	hooks.c.
-
-     3. Chunks in fastbins are treated as allocated chunks from the
-	point of view of the chunk allocator.  They are consolidated
-	with their neighbors only in bulk, in malloc_consolidate.
 */
 
 /*
@@ -1704,7 +1635,7 @@ unlink_chunk (mstate av, mchunkptr p)
     are first placed in the "unsorted" bin. They are then placed
     in regular bins after malloc gives them ONE chance to be used before
     binning. So, basically, the unsorted_chunks list acts as a queue,
-    with chunks being placed on it in free (and malloc_consolidate),
+    with chunks being placed on it in free,
     and taken off (to be either used or placed in bins) in malloc.
 
     The NON_MAIN_ARENA flag is never set for unsorted chunks, so it
@@ -1758,48 +1689,16 @@ unlink_chunk (mstate av, mchunkptr p)
 #define unmark_bin(m, i)  ((m)->binmap[idx2block (i)] &= ~(idx2bit (i)))
 #define get_binmap(m, i)  ((m)->binmap[idx2block (i)] & idx2bit (i))
 
-/*
-   Fastbins
-
-    An array of lists holding recently freed small chunks.  Fastbins
-    are not doubly linked.  It is faster to single-link them, and
-    since chunks are never removed from the middles of these lists,
-    double linking is not necessary. Also, unlike regular bins, they
-    are not even processed in FIFO order (they use faster LIFO) since
-    ordering doesn't much matter in the transient contexts in which
-    fastbins are normally used.
-
-    Chunks in fastbins keep their inuse bit set, so they cannot
-    be consolidated with other free chunks. malloc_consolidate
-    releases all chunks in fastbins and consolidates them with
-    other free chunks.
- */
-
-typedef struct malloc_chunk *mfastbinptr;
-#define fastbin(ar_ptr, idx) ((ar_ptr)->fastbinsY[idx])
-
-/* offset 2 to use otherwise unindexable first 2 bins */
-#define fastbin_index(sz) \
-  ((((unsigned int) (sz)) >> (SIZE_SZ == 8 ? 4 : 3)) - 2)
-
-
-/* The maximum fastbin request size we support */
-#define MAX_FAST_SIZE     (80 * SIZE_SZ / 4)
-
-#define NFASTBINS  (fastbin_index (request2size (MAX_FAST_SIZE)) + 1)
 
 /*
-   FASTBIN_CONSOLIDATION_THRESHOLD is the size of a chunk in free()
-   that triggers automatic consolidation of possibly-surrounding
-   fastbin chunks. This is a heuristic, so the exact value should not
-   matter too much. It is defined at half the default trim threshold as a
-   compromise heuristic to only attempt consolidation if it is likely
-   to lead to trimming. However, it is not dynamically tunable, since
-   consolidation reduces fragmentation surrounding large chunks even
-   if trimming is not used.
+   ATTEMPT_TRIMMING_THRESHOLD is the size of a chunk in free()
+   that may attempt trimming of an arena's heap. This is a heuristic, so the
+   exact value should not matter too much. It is defined at half the default
+   trim threshold as a compromise heuristic to only attempt trimming if it is
+   likely to release a significant amount of memory.
  */
 
-#define FASTBIN_CONSOLIDATION_THRESHOLD  (65536UL)
+#define ATTEMPT_TRIMMING_THRESHOLD  (65536UL)
 
 /*
    NONCONTIGUOUS_BIT indicates that MORECORE does not return contiguous
@@ -1816,48 +1715,9 @@ typedef struct malloc_chunk *mfastbinptr;
 #define set_noncontiguous(M)   ((M)->flags |= NONCONTIGUOUS_BIT)
 #define set_contiguous(M)      ((M)->flags &= ~NONCONTIGUOUS_BIT)
 
-/* Maximum size of memory handled in fastbins.  */
-static uint8_t global_max_fast;
-
-/*
-   Set value of max_fast.
-   Use impossibly small value if 0.
-   Precondition: there are no existing fastbin chunks in the main arena.
-   Since do_check_malloc_state () checks this, we call malloc_consolidate ()
-   before changing max_fast.  Note other arenas will leak their fast bin
-   entries if max_fast is reduced.
- */
-
-#define set_max_fast(s) \
-  global_max_fast = (((size_t) (s) <= MALLOC_ALIGN_MASK - SIZE_SZ)	\
-                     ? MIN_CHUNK_SIZE / 2 : ((s + SIZE_SZ) & ~MALLOC_ALIGN_MASK))
-
-static __always_inline INTERNAL_SIZE_T
-get_max_fast (void)
-{
-  /* Tell the GCC optimizers that global_max_fast is never larger
-     than MAX_FAST_SIZE.  This avoids out-of-bounds array accesses in
-     _int_malloc after constant propagation of the size parameter.
-     (The code never executes because malloc preserves the
-     global_max_fast invariant, but the optimizers may not recognize
-     this.)  */
-  if (global_max_fast > MAX_FAST_SIZE)
-    __builtin_unreachable ();
-  return global_max_fast;
-}
 
 /*
    ----------- Internal state representation and initialization -----------
- */
-
-/*
-   have_fastchunks indicates that there are probably some fastbin chunks.
-   It is set true on entering a chunk into any fastbin, and cleared early in
-   malloc_consolidate.  The value is approximate since it may be set when there
-   are no fastbin chunks, or it may be clear even if there are fastbin chunks
-   available.  Given it's sole purpose is to reduce number of redundant calls to
-   malloc_consolidate, it does not affect correctness.  As a result we can safely
-   use relaxed atomic accesses.
  */
 
 
@@ -1866,15 +1726,8 @@ struct malloc_state
   /* Serialize access.  */
   __libc_lock_define (, mutex);
 
-  /* Flags (formerly in max_fast).  */
+  /* Flags  */
   int flags;
-
-  /* Set if the fastbin chunks contain recently inserted free blocks.  */
-  /* Note this is a bool but not all targets support atomics on booleans.  */
-  int have_fastchunks;
-
-  /* Fastbins */
-  mfastbinptr fastbinsY[NFASTBINS];
 
   /* Base of the topmost chunk -- not otherwise kept in a bin */
   mchunkptr top;
@@ -2007,9 +1860,6 @@ malloc_init_state (mstate av)
   if (av != &main_arena)
 #endif
   set_noncontiguous (av);
-  if (av == &main_arena)
-    set_max_fast (DEFAULT_MXFAST);
-  atomic_store_relaxed (&av->have_fastchunks, false);
 
   av->top = initial_top (av);
 }
@@ -2020,7 +1870,6 @@ malloc_init_state (mstate av)
 
 static void *sysmalloc (INTERNAL_SIZE_T, mstate);
 static int      systrim (size_t, mstate);
-static void     malloc_consolidate (mstate);
 
 
 /* -------------- Early definitions for debugging hooks ---------------- */
@@ -2053,25 +1902,29 @@ free_perturb (char *p, size_t n)
 
 /* ----------- Routines dealing with transparent huge pages ----------- */
 
-static void thp_init (void);
+static __always_inline void
+thp_init (void)
+{
+  /* Initialize only once if DEFAULT_THP_PAGESIZE is defined.  */
+  if (!DEFAULT_THP_PAGESIZE || mp_.thp_mode != malloc_thp_mode_not_supported)
+    return;
+
+  /* Set thp_pagesize even if thp_mode is never.  This reduces frequency
+     of MORECORE () invocation.  */
+  mp_.thp_mode = __malloc_thp_mode ();
+  mp_.thp_pagesize = DEFAULT_THP_PAGESIZE;
+}
 
 static inline void
 madvise_thp (void *p, INTERNAL_SIZE_T size)
 {
 #ifdef MADV_HUGEPAGE
 
-  /* Ensure thp_init () is invoked only once */
-  if (mp_.thp_pagesize < DEFAULT_THP_PAGESIZE)
-    thp_init ();
+  thp_init ();
 
-  /* Only use __madvise if the system is using 'madvise' mode.
-     Otherwise the call is wasteful. */
-  if (mp_.thp_mode != malloc_thp_mode_madvise)
-    return;
-
-  /* Do not consider areas smaller than a huge page or if the tunable is
-     not active.  */
-  if (mp_.thp_pagesize == 0 || size < mp_.thp_pagesize)
+  /* Only use __madvise if the system is using 'madvise' mode and the size
+     is at least a huge page, otherwise the call is wasteful. */
+  if (mp_.thp_mode != malloc_thp_mode_madvise || size < mp_.thp_pagesize)
     return;
 
   /* Linux requires the input address to be page-aligned, and unaligned
@@ -2105,7 +1958,6 @@ madvise_thp (void *p, INTERNAL_SIZE_T size)
 # define check_chunk(A, P)
 # define check_free_chunk(A, P)
 # define check_inuse_chunk(A, P)
-# define check_remalloced_chunk(A, P, N)
 # define check_malloced_chunk(A, P, N)
 # define check_malloc_state(A)
 
@@ -2114,7 +1966,6 @@ madvise_thp (void *p, INTERNAL_SIZE_T size)
 # define check_chunk(A, P)              do_check_chunk (A, P)
 # define check_free_chunk(A, P)         do_check_free_chunk (A, P)
 # define check_inuse_chunk(A, P)        do_check_inuse_chunk (A, P)
-# define check_remalloced_chunk(A, P, N) do_check_remalloced_chunk (A, P, N)
 # define check_malloced_chunk(A, P, N)   do_check_malloced_chunk (A, P, N)
 # define check_malloc_state(A)         do_check_malloc_state (A)
 
@@ -2235,11 +2086,11 @@ do_check_inuse_chunk (mstate av, mchunkptr p)
 }
 
 /*
-   Properties of chunks recycled from fastbins
+   Properties of chunks at the point they are malloced
  */
 
 static void
-do_check_remalloced_chunk (mstate av, mchunkptr p, INTERNAL_SIZE_T s)
+do_check_malloced_chunk (mstate av, mchunkptr p, INTERNAL_SIZE_T s)
 {
   INTERNAL_SIZE_T sz = chunksize_nomask (p) & ~(PREV_INUSE | NON_MAIN_ARENA);
 
@@ -2262,17 +2113,6 @@ do_check_remalloced_chunk (mstate av, mchunkptr p, INTERNAL_SIZE_T s)
   /* chunk is less than MINSIZE more than request */
   assert ((long) (sz) - (long) (s) >= 0);
   assert ((long) (sz) - (long) (s + MINSIZE) < 0);
-}
-
-/*
-   Properties of nonrecycled chunks at the point they are malloced
- */
-
-static void
-do_check_malloced_chunk (mstate av, mchunkptr p, INTERNAL_SIZE_T s)
-{
-  /* same as recycled case ... */
-  do_check_remalloced_chunk (av, p, s);
 
   /*
      ... plus,  must obey implementation invariant that prev_inuse is
@@ -2280,8 +2120,7 @@ do_check_malloced_chunk (mstate av, mchunkptr p, INTERNAL_SIZE_T s)
      chunk borders either a previously allocated and still in-use
      chunk, or the base of its memory arena. This is ensured
      by making all allocations from the `lowest' part of any found
-     chunk.  This does not necessarily hold however for chunks
-     recycled via fastbins.
+     chunk.
    */
 
   assert (prev_inuse (p));
@@ -2309,7 +2148,6 @@ do_check_malloc_state (mstate av)
   unsigned int idx;
   INTERNAL_SIZE_T size;
   unsigned long total = 0;
-  int max_fast_bin;
 
   /* internal size_t must be no wider than pointer type */
   assert (sizeof (INTERNAL_SIZE_T) <= sizeof (char *));
@@ -2331,43 +2169,6 @@ do_check_malloc_state (mstate av)
   if (av == &main_arena && contiguous (av))
     assert ((char *) mp_.sbrk_base + av->system_mem ==
             (char *) av->top + chunksize (av->top));
-
-  /* properties of fastbins */
-
-  max_fast_bin = fastbin_index (get_max_fast ());
-
-  for (i = 0; i < NFASTBINS; ++i)
-    {
-      p = fastbin (av, i);
-
-      /* The following test can only be performed for the main arena.
-         While mallopt calls malloc_consolidate to get rid of all fast
-         bins (especially those larger than the new maximum) this does
-         only happen for the main arena.  Trying to do this for any
-         other arena would mean those arenas have to be locked and
-         malloc_consolidate be called for them.  This is excessive.  And
-         even if this is acceptable to somebody it still cannot solve
-         the problem completely since if the arena is locked a
-         concurrent malloc call might create a new arena which then
-         could use the newly invalid fast bins.  */
-
-      /* all bins past max_fast are empty */
-      if (av == &main_arena && i > max_fast_bin)
-        assert (p == 0);
-
-      while (p != 0)
-        {
-	  if (__glibc_unlikely (misaligned_chunk (p)))
-	    malloc_printerr ("do_check_malloc_state(): "
-			     "unaligned fastbin chunk detected");
-          /* each chunk claims to be inuse */
-          do_check_inuse_chunk (av, p);
-          total += chunksize (p);
-          /* chunk belongs in this bin */
-          assert (fastbin_index (chunksize (p)) == i);
-	  p = REVEAL_PTR (p->fd);
-        }
-    }
 
   /* check normal bins */
   for (i = 1; i < NBINS; ++i)
@@ -2671,9 +2472,8 @@ sysmalloc (INTERNAL_SIZE_T nb, mstate av)
          previous calls. Otherwise, we correct to page-align below.
        */
 
-      /* Ensure thp_init () is invoked only once */
-      if (mp_.thp_pagesize < DEFAULT_THP_PAGESIZE)
-        thp_init ();
+      /* Ensure thp_pagesize is initialized.  */
+      thp_init ();
 
       if (__glibc_unlikely (mp_.thp_pagesize != 0))
 	{
@@ -4055,85 +3855,6 @@ _int_malloc (mstate av, size_t bytes)
     }
 
   /*
-     If the size qualifies as a fastbin, first check corresponding bin.
-     This code is safe to execute even if av is not yet initialized, so we
-     can try it without checking, which saves some time on this fast path.
-   */
-
-#define REMOVE_FB(fb, victim, pp)			\
-  do							\
-    {							\
-      victim = pp;					\
-      if (victim == NULL)				\
-	break;						\
-      pp = REVEAL_PTR (victim->fd);                                     \
-      if (__glibc_unlikely (pp != NULL && misaligned_chunk (pp)))       \
-	malloc_printerr ("malloc(): unaligned fastbin chunk detected"); \
-    }							\
-  while ((pp = atomic_compare_and_exchange_val_acq (fb, pp, victim)) \
-	 != victim);					\
-
-  if ((unsigned long) (nb) <= (unsigned long) (get_max_fast ()))
-    {
-      idx = fastbin_index (nb);
-      mfastbinptr *fb = &fastbin (av, idx);
-      mchunkptr pp;
-      victim = *fb;
-
-      if (victim != NULL)
-	{
-	  if (__glibc_unlikely (misaligned_chunk (victim)))
-	    malloc_printerr ("malloc(): unaligned fastbin chunk detected 2");
-
-	  if (SINGLE_THREAD_P)
-	    *fb = REVEAL_PTR (victim->fd);
-	  else
-	    REMOVE_FB (fb, pp, victim);
-	  if (__glibc_likely (victim != NULL))
-	    {
-	      size_t victim_idx = fastbin_index (chunksize (victim));
-	      if (__glibc_unlikely (victim_idx != idx))
-		malloc_printerr ("malloc(): memory corruption (fast)");
-	      check_remalloced_chunk (av, victim, nb);
-#if USE_TCACHE
-	      /* While we're here, if we see other chunks of the same size,
-		 stash them in the tcache.  */
-	      size_t tc_idx = csize2tidx (nb);
-	      if (tc_idx < mp_.tcache_small_bins)
-		{
-		  mchunkptr tc_victim;
-
-		  if (__glibc_unlikely (tcache_inactive ()))
-		    tcache_init (av);
-
-		  /* While bin not empty and tcache not full, copy chunks.  */
-		  while (tcache->num_slots[tc_idx] != 0 && (tc_victim = *fb) != NULL)
-		    {
-		      if (__glibc_unlikely (misaligned_chunk (tc_victim)))
-			malloc_printerr ("malloc(): unaligned fastbin chunk detected 3");
-		      size_t victim_tc_idx = csize2tidx (chunksize (tc_victim));
-		      if (__glibc_unlikely (tc_idx != victim_tc_idx))
-			malloc_printerr ("malloc(): chunk size mismatch in fastbin");
-		      if (SINGLE_THREAD_P)
-			*fb = REVEAL_PTR (tc_victim->fd);
-		      else
-			{
-			  REMOVE_FB (fb, pp, tc_victim);
-			  if (__glibc_unlikely (tc_victim == NULL))
-			    break;
-			}
-		      tcache_put (tc_victim, tc_idx);
-		    }
-		}
-#endif
-	      void *p = chunk2mem (victim);
-	      alloc_perturb (p, bytes);
-	      return p;
-	    }
-	}
-    }
-
-  /*
      If a small request, check regular bin.  Since these "smallbins"
      hold one size each, no searching within bins is necessary.
      (For a large request, we need to wait until unsorted chunks are
@@ -4193,22 +3914,9 @@ _int_malloc (mstate av, size_t bytes)
         }
     }
 
-  /*
-     If this is a large request, consolidate fastbins before continuing.
-     While it might look excessive to kill all fastbins before
-     even seeing if there is space available, this avoids
-     fragmentation problems normally associated with fastbins.
-     Also, in practice, programs tend to have runs of either small or
-     large requests, but less often mixtures, so consolidation is not
-     invoked all that often in most programs. And the programs that
-     it is called frequently in otherwise tend to fragment.
-   */
-
   else
     {
       idx = largebin_index (nb);
-      if (atomic_load_relaxed (&av->have_fastchunks))
-        malloc_consolidate (av);
     }
 
   /*
@@ -4328,7 +4036,7 @@ _int_malloc (mstate av, size_t bytes)
 #endif
             }
 
-          /* Place chunk in bin.  Only malloc_consolidate() and splitting can put
+          /* Place chunk in bin.  Only splitting can put
              small chunks into the unsorted bin. */
           if (__glibc_unlikely (in_smallbin_range (size)))
             {
@@ -4636,18 +4344,6 @@ _int_malloc (mstate av, size_t bytes)
           return p;
         }
 
-      /* When we are using atomic ops to free fast chunks we can get
-         here for all block sizes.  */
-      else if (atomic_load_relaxed (&av->have_fastchunks))
-        {
-          malloc_consolidate (av);
-          /* restore original bin index */
-          if (in_smallbin_range (nb))
-            idx = smallbin_index (nb);
-          else
-            idx = largebin_index (nb);
-        }
-
       /*
          Otherwise, relay to handle system-dependent cases
        */
@@ -4671,89 +4367,11 @@ _int_malloc (mstate av, size_t bytes)
 static void
 _int_free_chunk (mstate av, mchunkptr p, INTERNAL_SIZE_T size, int have_lock)
 {
-  mfastbinptr *fb;             /* associated fastbin */
-
-  /*
-    If eligible, place chunk on a fastbin so it can be found
-    and used quickly in malloc.
-  */
-
-  if ((unsigned long)(size) <= (unsigned long)(get_max_fast ())
-
-#if TRIM_FASTBINS
-      /*
-	If TRIM_FASTBINS set, don't place chunks
-	bordering top into fastbins
-      */
-      && (chunk_at_offset(p, size) != av->top)
-#endif
-      ) {
-
-    if (__glibc_unlikely (
-          chunksize_nomask (chunk_at_offset(p, size)) <= CHUNK_HDR_SZ
-          || chunksize (chunk_at_offset(p, size)) >= av->system_mem))
-      {
-	bool fail = true;
-	/* We might not have a lock at this point and concurrent modifications
-	   of system_mem might result in a false positive.  Redo the test after
-	   getting the lock.  */
-	if (!have_lock)
-	  {
-	    __libc_lock_lock (av->mutex);
-	    fail = (chunksize_nomask (chunk_at_offset (p, size)) <= CHUNK_HDR_SZ
-		    || chunksize (chunk_at_offset (p, size)) >= av->system_mem);
-	    __libc_lock_unlock (av->mutex);
-	  }
-
-	if (fail)
-	  malloc_printerr ("free(): invalid next size (fast)");
-      }
-
-    free_perturb (chunk2mem(p), size - CHUNK_HDR_SZ);
-
-    atomic_store_relaxed (&av->have_fastchunks, true);
-    unsigned int idx = fastbin_index(size);
-    fb = &fastbin (av, idx);
-
-    /* Atomically link P to its fastbin: P->FD = *FB; *FB = P;  */
-    mchunkptr old = *fb, old2;
-
-    if (SINGLE_THREAD_P)
-      {
-	/* Check that the top of the bin is not the record we are going to
-	   add (i.e., double free).  */
-	if (__glibc_unlikely (old == p))
-	  malloc_printerr ("double free or corruption (fasttop)");
-	p->fd = PROTECT_PTR (&p->fd, old);
-	*fb = p;
-      }
-    else
-      do
-	{
-	  /* Check that the top of the bin is not the record we are going to
-	     add (i.e., double free).  */
-	  if (__glibc_unlikely (old == p))
-	    malloc_printerr ("double free or corruption (fasttop)");
-	  old2 = old;
-	  p->fd = PROTECT_PTR (&p->fd, old);
-	}
-      while ((old = atomic_compare_and_exchange_val_rel (fb, p, old2))
-	     != old2);
-
-    /* Check that size of fastbin chunk at the top is the same as
-       size of the chunk that we are adding.  We can dereference OLD
-       only if we have the lock, otherwise it might have already been
-       allocated again.  */
-    if (have_lock && old != NULL
-	&& __glibc_unlikely (fastbin_index (chunksize (old)) != idx))
-      malloc_printerr ("invalid fastbin entry (free)");
-  }
-
   /*
     Consolidate other non-mmapped chunks as they arrive.
   */
 
-  else if (!chunk_is_mmapped(p)) {
+  if (!chunk_is_mmapped(p)) {
 
     /* Preserve errno in case block merging results in munmap.  */
     int err = errno;
@@ -4842,7 +4460,7 @@ _int_free_merge_chunk (mstate av, mchunkptr p, INTERNAL_SIZE_T size)
 
   /* Write the chunk header, maybe after merging with the following chunk.  */
   size = _int_free_create_chunk (av, p, size, nextchunk, nextsize);
-  _int_free_maybe_consolidate (av, size);
+  _int_free_maybe_trim (av, size);
 }
 
 /* Create a chunk at P of SIZE bytes, with SIZE potentially increased
@@ -4921,22 +4539,15 @@ _int_free_create_chunk (mstate av, mchunkptr p, INTERNAL_SIZE_T size,
   return size;
 }
 
-/* If freeing a large space, consolidate possibly-surrounding
-   chunks.  Then, if the total unused topmost memory exceeds trim
-   threshold, ask malloc_trim to reduce top.  */
+/* If the total unused topmost memory exceeds trim threshold, ask malloc_trim
+   to reduce top.  */
 static void
-_int_free_maybe_consolidate (mstate av, INTERNAL_SIZE_T size)
+_int_free_maybe_trim (mstate av, INTERNAL_SIZE_T size)
 {
-  /* Unless max_fast is 0, we don't know if there are fastbins
-     bordering top, so we cannot tell for sure whether threshold has
-     been reached unless fastbins are consolidated.  But we don't want
-     to consolidate on each free.  As a compromise, consolidation is
-     performed if FASTBIN_CONSOLIDATION_THRESHOLD is reached.  */
-  if (size >= FASTBIN_CONSOLIDATION_THRESHOLD)
+  /* We don't want to trim on each free.  As a compromise, trimming is attempted
+     if ATTEMPT_TRIMMING_THRESHOLD is reached.  */
+  if (size >= ATTEMPT_TRIMMING_THRESHOLD)
     {
-      if (atomic_load_relaxed (&av->have_fastchunks))
-	malloc_consolidate(av);
-
       if (av == &main_arena)
 	{
 #ifndef MORECORE_CANNOT_TRIM
@@ -4954,113 +4565,6 @@ _int_free_maybe_consolidate (mstate av, INTERNAL_SIZE_T size)
 	  heap_trim (heap, mp_.top_pad);
 	}
     }
-}
-
-/*
-  ------------------------- malloc_consolidate -------------------------
-
-  malloc_consolidate is a specialized version of free() that tears
-  down chunks held in fastbins.  Free itself cannot be used for this
-  purpose since, among other things, it might place chunks back onto
-  fastbins.  So, instead, we need to use a minor variant of the same
-  code.
-*/
-
-static void malloc_consolidate(mstate av)
-{
-  mfastbinptr*    fb;                 /* current fastbin being consolidated */
-  mfastbinptr*    maxfb;              /* last fastbin (for loop control) */
-  mchunkptr       p;                  /* current chunk being consolidated */
-  mchunkptr       nextp;              /* next chunk to consolidate */
-  mchunkptr       unsorted_bin;       /* bin header */
-  mchunkptr       first_unsorted;     /* chunk to link to */
-
-  /* These have same use as in free() */
-  mchunkptr       nextchunk;
-  INTERNAL_SIZE_T size;
-  INTERNAL_SIZE_T nextsize;
-  INTERNAL_SIZE_T prevsize;
-  int             nextinuse;
-
-  atomic_store_relaxed (&av->have_fastchunks, false);
-
-  unsorted_bin = unsorted_chunks(av);
-
-  /*
-    Remove each chunk from fast bin and consolidate it, placing it
-    then in unsorted bin. Among other reasons for doing this,
-    placing in unsorted bin avoids needing to calculate actual bins
-    until malloc is sure that chunks aren't immediately going to be
-    reused anyway.
-  */
-
-  maxfb = &fastbin (av, NFASTBINS - 1);
-  fb = &fastbin (av, 0);
-  do {
-    p = atomic_exchange_acquire (fb, NULL);
-    if (p != NULL) {
-      do {
-	{
-	  if (__glibc_unlikely (misaligned_chunk (p)))
-	    malloc_printerr ("malloc_consolidate(): "
-			     "unaligned fastbin chunk detected");
-
-	  unsigned int idx = fastbin_index (chunksize (p));
-	  if ((&fastbin (av, idx)) != fb)
-	    malloc_printerr ("malloc_consolidate(): invalid chunk size");
-	}
-
-	check_inuse_chunk(av, p);
-	nextp = REVEAL_PTR (p->fd);
-
-	/* Slightly streamlined version of consolidation code in free() */
-	size = chunksize (p);
-	nextchunk = chunk_at_offset(p, size);
-	nextsize = chunksize(nextchunk);
-
-	if (!prev_inuse(p)) {
-	  prevsize = prev_size (p);
-	  size += prevsize;
-	  p = chunk_at_offset(p, -((long) prevsize));
-	  if (__glibc_unlikely (chunksize(p) != prevsize))
-	    malloc_printerr ("corrupted size vs. prev_size in fastbins");
-	  unlink_chunk (av, p);
-	}
-
-	if (nextchunk != av->top) {
-	  nextinuse = inuse_bit_at_offset(nextchunk, nextsize);
-
-	  if (!nextinuse) {
-	    size += nextsize;
-	    unlink_chunk (av, nextchunk);
-	  } else
-	    clear_inuse_bit_at_offset(nextchunk, 0);
-
-	  first_unsorted = unsorted_bin->fd;
-	  unsorted_bin->fd = p;
-	  first_unsorted->bk = p;
-
-	  if (!in_smallbin_range (size)) {
-	    p->fd_nextsize = NULL;
-	    p->bk_nextsize = NULL;
-	  }
-
-	  set_head(p, size | PREV_INUSE);
-	  p->bk = unsorted_bin;
-	  p->fd = first_unsorted;
-	  set_foot(p, size);
-	}
-
-	else {
-	  size += nextsize;
-	  set_head(p, size | PREV_INUSE);
-	  av->top = p;
-	}
-
-      } while ( (p = nextp) != NULL);
-
-    }
-  } while (fb++ != maxfb);
 }
 
 /*
@@ -5249,7 +4753,7 @@ _int_memalign (mstate av, size_t alignment, size_t bytes)
       set_head_size (p, nb);
       size = _int_free_create_chunk (av, remainder, size - nb, nextchunk,
 				     chunksize (nextchunk));
-      _int_free_maybe_consolidate (av, size);
+      _int_free_maybe_trim (av, size);
     }
 
   check_inuse_chunk (av, p);
@@ -5264,9 +4768,6 @@ _int_memalign (mstate av, size_t alignment, size_t bytes)
 static int
 mtrim (mstate av, size_t pad)
 {
-  /* Ensure all blocks are consolidated.  */
-  malloc_consolidate (av);
-
   const size_t ps = GLRO (dl_pagesize);
   int psindex = bin_index (ps);
   const size_t psm1 = ps - 1;
@@ -5377,35 +4878,13 @@ int_mallinfo (mstate av, struct mallinfo2 *m)
   mbinptr b;
   mchunkptr p;
   INTERNAL_SIZE_T avail;
-  INTERNAL_SIZE_T fastavail;
   int nblocks;
-  int nfastblocks;
 
   check_malloc_state (av);
 
   /* Account for top */
   avail = chunksize (av->top);
   nblocks = 1;  /* top always exists */
-
-  /* traverse fastbins */
-  nfastblocks = 0;
-  fastavail = 0;
-
-  for (i = 0; i < NFASTBINS; ++i)
-    {
-      for (p = fastbin (av, i);
-	   p != NULL;
-	   p = REVEAL_PTR (p->fd))
-        {
-	  if (__glibc_unlikely (misaligned_chunk (p)))
-	    malloc_printerr ("int_mallinfo(): "
-			     "unaligned fastbin chunk detected");
-          ++nfastblocks;
-          fastavail += chunksize (p);
-        }
-    }
-
-  avail += fastavail;
 
   /* traverse regular bins */
   for (i = 1; i < NBINS; ++i)
@@ -5418,12 +4897,10 @@ int_mallinfo (mstate av, struct mallinfo2 *m)
         }
     }
 
-  m->smblks += nfastblocks;
   m->ordblks += nblocks;
   m->fordblks += avail;
   m->uordblks += av->system_mem - avail;
   m->arena += av->system_mem;
-  m->fsmblks += fastavail;
   if (av == &main_arena)
     {
       m->hblks = mp_.n_mmaps;
@@ -5464,11 +4941,11 @@ __libc_mallinfo (void)
 
   m.arena = m2.arena;
   m.ordblks = m2.ordblks;
-  m.smblks = m2.smblks;
+  m.smblks = 0;
   m.hblks = m2.hblks;
   m.hblkhd = m2.hblkhd;
   m.usmblks = m2.usmblks;
-  m.fsmblks = m2.fsmblks;
+  m.fsmblks = 0;
   m.uordblks = m2.uordblks;
   m.fordblks = m2.fordblks;
   m.keepcost = m2.keepcost;
@@ -5646,19 +5123,15 @@ do_set_tcache_unsorted_limit (size_t value)
 static __always_inline int
 do_set_mxfast (size_t value)
 {
-  if (value <= MAX_FAST_SIZE)
-    {
-      LIBC_PROBE (memory_mallopt_mxfast, 2, value, get_max_fast ());
-      set_max_fast (value);
-      return 1;
-    }
-  return 0;
+  return 1;
 }
 
 static __always_inline int
 do_set_hugetlb (size_t value)
 {
-  if (value == 1)
+  if (value == 0)
+    mp_.thp_mode = malloc_thp_mode_never;
+  else if (value == 1)
     {
       mp_.thp_mode = __malloc_thp_mode ();
       if (mp_.thp_mode == malloc_thp_mode_madvise
@@ -5671,15 +5144,6 @@ do_set_hugetlb (size_t value)
   return 0;
 }
 
-static __always_inline void
-thp_init (void)
-{
-  /* thp_pagesize is set even if thp_mode is never. This reduces frequency
-     of MORECORE () invocation.  */
-  mp_.thp_pagesize = DEFAULT_THP_PAGESIZE;
-  mp_.thp_mode = __malloc_thp_mode ();
-}
-
 int
 __libc_mallopt (int param_number, int value)
 {
@@ -5689,10 +5153,6 @@ __libc_mallopt (int param_number, int value)
   __libc_lock_lock (av->mutex);
 
   LIBC_PROBE (memory_mallopt, 2, param_number, value);
-
-  /* We must consolidate main arena before changing max_fast
-     (see definition of set_max_fast).  */
-  malloc_consolidate (av);
 
   /* Many of these helper functions take a size_t.  We do not worry
      about overflow here, because negative int values will wrap to
@@ -5952,9 +5412,7 @@ __malloc_info (int options, FILE *fp)
 
   int n = 0;
   size_t total_nblocks = 0;
-  size_t total_nfastblocks = 0;
   size_t total_avail = 0;
-  size_t total_fastavail = 0;
   size_t total_system = 0;
   size_t total_max_system = 0;
   size_t total_aspace = 0;
@@ -5969,16 +5427,14 @@ __malloc_info (int options, FILE *fp)
       fprintf (fp, "<heap nr=\"%d\">\n<sizes>\n", n++);
 
       size_t nblocks = 0;
-      size_t nfastblocks = 0;
       size_t avail = 0;
-      size_t fastavail = 0;
       struct
       {
 	size_t from;
 	size_t to;
 	size_t total;
 	size_t count;
-      } sizes[NFASTBINS + NBINS - 1];
+      } sizes[NBINS - 1];
 #define nsizes (sizeof (sizes) / sizeof (sizes[0]))
 
       __libc_lock_lock (ar_ptr->mutex);
@@ -5989,36 +5445,6 @@ __malloc_info (int options, FILE *fp)
       avail = chunksize (ar_ptr->top);
       nblocks = 1;  /* Top always exists.  */
 
-      for (size_t i = 0; i < NFASTBINS; ++i)
-	{
-	  mchunkptr p = fastbin (ar_ptr, i);
-	  if (p != NULL)
-	    {
-	      size_t nthissize = 0;
-	      size_t thissize = chunksize (p);
-
-	      while (p != NULL)
-		{
-		  if (__glibc_unlikely (misaligned_chunk (p)))
-		    malloc_printerr ("__malloc_info(): "
-				     "unaligned fastbin chunk detected");
-		  ++nthissize;
-		  p = REVEAL_PTR (p->fd);
-		}
-
-	      fastavail += nthissize * thissize;
-	      nfastblocks += nthissize;
-	      sizes[i].from = thissize - (MALLOC_ALIGNMENT - 1);
-	      sizes[i].to = thissize;
-	      sizes[i].count = nthissize;
-	    }
-	  else
-	    sizes[i].from = sizes[i].to = sizes[i].count = 0;
-
-	  sizes[i].total = sizes[i].count * sizes[i].to;
-	}
-
-
       mbinptr bin;
       struct malloc_chunk *r;
 
@@ -6026,28 +5452,28 @@ __malloc_info (int options, FILE *fp)
 	{
 	  bin = bin_at (ar_ptr, i);
 	  r = bin->fd;
-	  sizes[NFASTBINS - 1 + i].from = ~((size_t) 0);
-	  sizes[NFASTBINS - 1 + i].to = sizes[NFASTBINS - 1 + i].total
-					  = sizes[NFASTBINS - 1 + i].count = 0;
+	  sizes[i - 1].from = ~((size_t) 0);
+	  sizes[i - 1].to = sizes[i - 1].total
+					  = sizes[i - 1].count = 0;
 
 	  if (r != NULL)
 	    while (r != bin)
 	      {
 		size_t r_size = chunksize_nomask (r);
-		++sizes[NFASTBINS - 1 + i].count;
-		sizes[NFASTBINS - 1 + i].total += r_size;
-		sizes[NFASTBINS - 1 + i].from
-		  = MIN (sizes[NFASTBINS - 1 + i].from, r_size);
-		sizes[NFASTBINS - 1 + i].to = MAX (sizes[NFASTBINS - 1 + i].to,
+		++sizes[i - 1].count;
+		sizes[i - 1].total += r_size;
+		sizes[i - 1].from
+		  = MIN (sizes[i - 1].from, r_size);
+		sizes[i - 1].to = MAX (sizes[i - 1].to,
 						   r_size);
 
 		r = r->fd;
 	      }
 
-	  if (sizes[NFASTBINS - 1 + i].count == 0)
-	    sizes[NFASTBINS - 1 + i].from = 0;
-	  nblocks += sizes[NFASTBINS - 1 + i].count;
-	  avail += sizes[NFASTBINS - 1 + i].total;
+	  if (sizes[i - 1].count == 0)
+	    sizes[i - 1].from = 0;
+	  nblocks += sizes[i - 1].count;
+	  avail += sizes[i - 1].total;
 	}
 
       size_t heap_size = 0;
@@ -6069,34 +5495,30 @@ __malloc_info (int options, FILE *fp)
 
       __libc_lock_unlock (ar_ptr->mutex);
 
-      total_nfastblocks += nfastblocks;
-      total_fastavail += fastavail;
-
       total_nblocks += nblocks;
       total_avail += avail;
 
-      for (size_t i = 0; i < nsizes; ++i)
-	if (sizes[i].count != 0 && i != NFASTBINS)
+      for (size_t i = 1; i < nsizes; ++i)
+	if (sizes[i].count != 0)
 	  fprintf (fp, "\
   <size from=\"%zu\" to=\"%zu\" total=\"%zu\" count=\"%zu\"/>\n",
 		   sizes[i].from, sizes[i].to, sizes[i].total, sizes[i].count);
 
-      if (sizes[NFASTBINS].count != 0)
+      if (sizes[0].count != 0)
 	fprintf (fp, "\
   <unsorted from=\"%zu\" to=\"%zu\" total=\"%zu\" count=\"%zu\"/>\n",
-		 sizes[NFASTBINS].from, sizes[NFASTBINS].to,
-		 sizes[NFASTBINS].total, sizes[NFASTBINS].count);
+		 sizes[0].from, sizes[0].to,
+		 sizes[0].total, sizes[0].count);
 
       total_system += ar_ptr->system_mem;
       total_max_system += ar_ptr->max_system_mem;
 
       fprintf (fp,
-	       "</sizes>\n<total type=\"fast\" count=\"%zu\" size=\"%zu\"/>\n"
+	       "<sizes>\n"
 	       "<total type=\"rest\" count=\"%zu\" size=\"%zu\"/>\n"
 	       "<system type=\"current\" size=\"%zu\"/>\n"
 	       "<system type=\"max\" size=\"%zu\"/>\n",
-	       nfastblocks, fastavail, nblocks, avail,
-	       ar_ptr->system_mem, ar_ptr->max_system_mem);
+	        nblocks, avail, ar_ptr->system_mem, ar_ptr->max_system_mem);
 
       if (ar_ptr != &main_arena)
 	{
@@ -6124,7 +5546,6 @@ __malloc_info (int options, FILE *fp)
   while (ar_ptr != &main_arena);
 
   fprintf (fp,
-	   "<total type=\"fast\" count=\"%zu\" size=\"%zu\"/>\n"
 	   "<total type=\"rest\" count=\"%zu\" size=\"%zu\"/>\n"
 	   "<total type=\"mmap\" count=\"%d\" size=\"%zu\"/>\n"
 	   "<system type=\"current\" size=\"%zu\"/>\n"
@@ -6132,7 +5553,7 @@ __malloc_info (int options, FILE *fp)
 	   "<aspace type=\"total\" size=\"%zu\"/>\n"
 	   "<aspace type=\"mprotect\" size=\"%zu\"/>\n"
 	   "</malloc>\n",
-	   total_nfastblocks, total_fastavail, total_nblocks, total_avail,
+	   total_nblocks, total_avail,
 	   mp_.n_mmaps, mp_.mmapped_mem,
 	   total_system, total_max_system,
 	   total_aspace, total_aspace_mprotect);

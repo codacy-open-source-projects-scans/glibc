@@ -216,8 +216,11 @@ libc_hidden_proto (__pthread_current_priority)
 /* This will not catch all invalid descriptors but is better than
    nothing.  And if the test triggers the thread descriptor is
    guaranteed to be invalid.  */
-#define INVALID_TD_P(pd) __builtin_expect ((pd)->tid <= 0, 0)
-#define INVALID_NOT_TERMINATED_TD_P(pd) __builtin_expect ((pd)->tid < 0, 0)
+static inline bool
+__pthread_descriptor_valid (struct pthread *pd)
+{
+  return atomic_load_relaxed (&pd->joinstate) != THREAD_STATE_EXITED;
+}
 
 extern void __pthread_unwind (__pthread_unwind_buf_t *__buf)
      __cleanup_fct_attribute __attribute ((__noreturn__))
@@ -252,7 +255,20 @@ __do_cancel (void *result)
   self->result = result;
 
   /* Make sure we get no more cancellations.  */
-  atomic_fetch_or_relaxed (&self->cancelhandling, EXITING_BITMASK);
+  int oldval = atomic_load_relaxed (&self->cancelhandling);
+  int newval;
+  do
+    {
+      /* It is required by POSIX XSH 2.9.5 Thread Cancellation under the
+	 heading Thread Cancellation Cleanup Handlers and also prevents
+	 further cancellation points from acting on cancellation.  */
+      newval = oldval | CANCELSTATE_BITMASK | EXITING_BITMASK;
+      newval = newval & ~CANCELTYPE_BITMASK;
+      if (oldval == newval)
+	break;
+    }
+  while (!atomic_compare_exchange_weak_acquire (&self->cancelhandling,
+						&oldval, newval));
 
   __pthread_unwind ((__pthread_unwind_buf_t *)
 		    THREAD_GETMEM (self, cleanup_jmp_buf));
