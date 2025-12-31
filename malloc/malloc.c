@@ -1906,7 +1906,7 @@ static __always_inline void
 thp_init (void)
 {
   /* Initialize only once if DEFAULT_THP_PAGESIZE is defined.  */
-  if (!DEFAULT_THP_PAGESIZE || mp_.thp_mode != malloc_thp_mode_not_supported)
+  if (DEFAULT_THP_PAGESIZE == 0 || mp_.thp_mode != malloc_thp_mode_not_supported)
     return;
 
   /* Set thp_pagesize even if thp_mode is never.  This reduces frequency
@@ -5514,7 +5514,7 @@ __malloc_info (int options, FILE *fp)
       total_max_system += ar_ptr->max_system_mem;
 
       fprintf (fp,
-	       "<sizes>\n"
+	       "</sizes>\n"
 	       "<total type=\"rest\" count=\"%zu\" size=\"%zu\"/>\n"
 	       "<system type=\"current\" size=\"%zu\"/>\n"
 	       "<system type=\"max\" size=\"%zu\"/>\n",
