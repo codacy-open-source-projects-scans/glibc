@@ -1,5 +1,5 @@
 /* Read and display shared object profiling data.
-   Copyright (C) 1997-2025 Free Software Foundation, Inc.
+   Copyright (C) 1997-2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -681,7 +681,7 @@ load_shobj (const char *name)
 	  size_t size;
 	  if (INT_MULTIPLY_WRAPV (ehdr2.e_shnum, sizeof (ElfW(Shdr)), &size))
 	    error (EXIT_FAILURE, errno, _("too many section headers"));
-	    
+
 	  ElfW(Shdr) *shdr2 = (ElfW(Shdr) *) alloca (size);
 	  PCHECK (size, ehdr2.e_shoff);
 	  if (pread (fd2, shdr2, size, ehdr2.e_shoff) != size)

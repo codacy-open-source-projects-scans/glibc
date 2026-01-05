@@ -1,5 +1,5 @@
 /* Basic tests for Linux PID_GET_INFO interfaces.
-   Copyright (C) 2022-2025 Free Software Foundation, Inc.
+   Copyright (C) 2022-2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -51,7 +51,7 @@ do_test (void)
       else
 	FAIL_EXIT1 ("ioctl (PIDFD_GET_INFO) failed: %m");
     }
-  
+
   TEST_COMPARE (info.pid, pid);
   TEST_COMPARE (info.ppid, getppid ());
   TEST_COMPARE (info.ruid, getuid ());
