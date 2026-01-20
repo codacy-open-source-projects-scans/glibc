@@ -1,5 +1,5 @@
-/* Define __FP_BUILTIN_DENORMAL.
-   Copyright (C) 2025-2026 Free Software Foundation, Inc.
+/* Simple test for an executable without BTI marking.
+   Copyright (C) 2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,14 +16,20 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#ifndef _MATH_H
-# error "Never use <bits/fp-builtin-denormal.h> directly; include <math.h> instead."
-#endif
+#include <stdio.h>
+#include <sys/auxv.h>
+#include <sys/signal.h>
 
-/* Neither GCC (bug 123161) nor clang (issue 172533) handles pseudo-normal
-   numbers correctly with fpclassify builtin.  */
-#define __FP_BUILTIN_FPCLASSIFY_DENORMAL 0
+#include <support/check.h>
+#include <support/test-driver.h>
 
-/* Neither GCC (bug 123173) nor clang (issue 172651) handles pseudo-normal
-   numbers correctly with isinf_sign builtin.  */
-#define __FP_BUILTIN_ISINF_SIGN_DENORMAL 0
+static int
+do_test (void)
+{
+  unsigned long hwcap2 = getauxval (AT_HWCAP2);
+  if ((hwcap2 & HWCAP2_BTI) == 0)
+    FAIL_UNSUPPORTED ("BTI is not supported by this system");
+  return 0;
+}
+
+#include <support/test-driver.c>

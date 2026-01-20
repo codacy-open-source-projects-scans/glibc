@@ -66,15 +66,35 @@ _dl_bti_protect (struct link_map *map, int fd)
 static void
 bti_failed (struct link_map *l, const char *program)
 {
-  if (program)
-    _dl_fatal_printf ("%s: %s: failed to turn on BTI protection\n",
-		      program, l->l_name);
+  if (program != NULL)
+    {
+      if (program[0] != '\0' && l->l_name[0] != '\0')
+	/* A program's dependency is not BTI compatible.  */
+	_dl_fatal_printf ("%s: %s: failed to turn on BTI protection\n",
+			  program, l->l_name);
+      if (program[0] != '\0')
+	/* The program itself is not BTI compatible.  */
+	_dl_fatal_printf ("%s: failed to turn on BTI protection\n", program);
+      /* For static binaries, program will be an empty string.  */
+      _dl_fatal_printf ("error: failed to turn on BTI protection\n");
+    }
   else
-    /* Note: the errno value is not available any more.  */
+    /* If program is NULL, we are processing a dlopen operation.
+       Note: the errno value is not available any more.  */
     _dl_signal_error (0, l->l_name, "dlopen",
-		      N_("failed to turn on BTI protection"));
+		      "failed to turn on BTI protection");
 }
 
+static void
+bti_warning (struct link_map *l, const char *program)
+{
+  if (l->l_name[0] != '\0')
+    _dl_debug_printf ("security: not compatible with AArch64 BTI: %s\n",
+		      l->l_name);
+  else if (__glibc_likely (program != NULL))
+    _dl_debug_printf ("security: not compatible with AArch64 BTI: %s\n",
+		      program);
+}
 
 /* Enable BTI for L and its dependencies.  */
 
@@ -102,7 +122,12 @@ _dl_bti_check (struct link_map *l, const char *program)
       if (is_rtld_link_map (dep->l_real))
 	continue;
 #endif
-      if (enforce_bti && !dep->l_mach.bti)
-	bti_failed (dep, program);
+      if (!dep->l_mach.bti)
+	{
+	  if (enforce_bti)
+	    bti_failed (dep, program);
+	  else if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_SECURITY))
+	    bti_warning (dep, program);
+	}
     }
 }
