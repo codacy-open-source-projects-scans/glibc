@@ -1,5 +1,6 @@
-/* Simple test for an executable without BTI marking.
-   Copyright (C) 2026 Free Software Foundation, Inc.
+/* Simple test for BTI support with dlopen: this base source file is
+   included in several tests.
+   Copyright (C) 2025-2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,11 +18,15 @@
    <https://www.gnu.org/licenses/>.  */
 
 #include <stdio.h>
+#include <dlfcn.h>
+#include <string.h>
 #include <sys/auxv.h>
 #include <sys/signal.h>
 
 #include <support/check.h>
 #include <support/test-driver.h>
+
+typedef int (*fun_t) (void);
 
 static int
 do_test (void)
@@ -29,6 +34,26 @@ do_test (void)
   unsigned long hwcap2 = getauxval (AT_HWCAP2);
   if ((hwcap2 & HWCAP2_BTI) == 0)
     FAIL_UNSUPPORTED ("BTI is not supported by this system");
+
+  void *h = dlopen (TEST_BTI_DLOPEN_MODULE, RTLD_NOW);
+  const char *err = dlerror ();
+
+#if TEST_BTI_EXPECT_DLOPEN
+  TEST_VERIFY (h != NULL);
+#else
+  TEST_VERIFY (h == NULL);
+  /* Only accept expected BTI-related errors.  */
+  TEST_VERIFY (strstr (err, "failed to turn on BTI protection") != NULL);
+#endif
+
+  if (h == NULL)
+    printf ("dlopen error: %s\n", err);
+  else
+    {
+      puts ("library "  TEST_BTI_DLOPEN_MODULE " loaded normally");
+      dlclose (h);
+    }
+
   return 0;
 }
 

@@ -1,7 +1,5 @@
-/* Test to check that static binary without PT_GNU_PROPERTY can
-   still be enforced to have BTI marking (and abort since it
-   doesn't have any).
-   Copyright (C) 2025 Free Software Foundation, Inc.
+/* Simple test for an executable without BTI marking.
+   Copyright (C) 2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,14 +16,8 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <stdio.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
 #include <sys/auxv.h>
-
 #include <support/check.h>
-#include <support/support.h>
 #include <support/test-driver.h>
 
 static int

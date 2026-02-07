@@ -1,6 +1,7 @@
-/* Simple test for BTI support: this base source file is included in
-   several tests.
-   Copyright (C) 2025-2026 Free Software Foundation, Inc.
+/* Test to check that static binary without PT_GNU_PROPERTY can
+   still be enforced to have BTI marking (and abort since it
+   doesn't have any).
+   Copyright (C) 2025 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -17,33 +18,17 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#include <stdio.h>
 #include <sys/auxv.h>
-#include <sys/signal.h>
-
 #include <support/check.h>
 #include <support/test-driver.h>
-
-#ifndef FUN_ATTRIBUTE
-# define FUN_ATTRIBUTE
-#endif
-
-/* Defined in tst-bti-mod.c file.  */
-extern int fun (void) FUN_ATTRIBUTE;
-
-typedef int (*fun_t) (void);
 
 static int
 do_test (void)
 {
   unsigned long hwcap2 = getauxval (AT_HWCAP2);
   if ((hwcap2 & HWCAP2_BTI) == 0)
-    {
-      FAIL_UNSUPPORTED ("BTI is not supported by this system");
-    }
-
-  fun_t fn = &fun;
-  return fn ();
+    FAIL_UNSUPPORTED ("BTI is not supported by this system");
+  return 0;
 }
 
 #include <support/test-driver.c>
