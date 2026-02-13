@@ -1,5 +1,5 @@
-/* Convert an address family to a string.
-   Copyright (C) 2016-2026 Free Software Foundation, Inc.
+/* Convert a struct ether_addr object to a string.
+   Copyright (C) 2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,23 +18,16 @@
 
 #include <support/format_nss.h>
 
-#include <netdb.h>
+#include <errno.h>
+#include <netinet/ether.h>
 #include <support/support.h>
 
 char *
-support_format_address_family (int family)
+support_format_ether_addr (const struct ether_addr *e)
 {
-  switch (family)
-    {
-    case AF_INET:
-      return xstrdup ("INET");
-    case AF_INET6:
-      return xstrdup ("INET6");
-    case AF_LOCAL:
-      return xstrdup ("LOCAL");
-    case AF_UNSPEC:
-      return xstrdup ("UNSPEC");
-    default:
-      return xasprintf ("<unknown address family %d>", family);
-    }
+  if (e == NULL)
+    return xasprintf ("error: (errno %d, %m)\n", errno);
+
+  char buf[sizeof ("xx:xx:xx:xx:xx:xx")];
+  return xasprintf ("address: %s\n", ether_ntoa_r (e, buf));
 }

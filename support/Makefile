@@ -28,9 +28,18 @@ libsupport-routines = \
   blob_repeat \
   check \
   check_addrinfo \
+  check_aliasent \
   check_dns_packet \
+  check_ether_addr \
+  check_group \
   check_hostent \
   check_netent \
+  check_passwd \
+  check_protoent \
+  check_rpcent \
+  check_servent \
+  check_sgrp \
+  check_spwd \
   delayed_exit \
   dtotimespec \
   dtotimespec-time64 \
@@ -46,6 +55,7 @@ libsupport-routines = \
   support_can_chroot \
   support_capture_subprocess \
   support_capture_subprocess_check \
+  support_check_nss \
   support_check_stat_fd \
   support_check_stat_path \
   support_chroot \
@@ -60,15 +70,25 @@ libsupport-routines = \
   support_enter_network_namespace \
   support_format_address_family \
   support_format_addrinfo \
+  support_format_aliasent \
   support_format_dns_packet \
+  support_format_ether_addr \
+  support_format_group \
   support_format_herrno \
   support_format_hostent \
   support_format_netent \
+  support_format_passwd \
+  support_format_protoent \
+  support_format_rpcent \
+  support_format_servent \
+  support_format_sgrp \
+  support_format_spwd \
   support_fuse \
   support_isolate_in_subprocess \
   support_mem_access \
   support_mutex_pi_monotonic \
   support_need_proc \
+  support_nscd \
   support_open_and_compare_file_bytes \
   support_open_and_compare_file_string \
   support_openpty \
@@ -358,6 +378,7 @@ tests = \
   tst-support_capture_subprocess \
   tst-support_descriptors \
   tst-support_format_dns_packet \
+  tst-support_format_nss \
   tst-support_fuse \
   tst-support_quote_blob \
   tst-support_quote_blob_wide \

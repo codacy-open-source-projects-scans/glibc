@@ -1,5 +1,5 @@
-/* Convert an address family to a string.
-   Copyright (C) 2016-2026 Free Software Foundation, Inc.
+/* Compare struct passwd values against a formatted string.
+   Copyright (C) 2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,25 +16,14 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
+#include <support/check_nss.h>
+
 #include <support/format_nss.h>
 
-#include <netdb.h>
-#include <support/support.h>
-
-char *
-support_format_address_family (int family)
+void
+check_passwd (const char *description, const struct passwd *p,
+              const char *expected)
 {
-  switch (family)
-    {
-    case AF_INET:
-      return xstrdup ("INET");
-    case AF_INET6:
-      return xstrdup ("INET6");
-    case AF_LOCAL:
-      return xstrdup ("LOCAL");
-    case AF_UNSPEC:
-      return xstrdup ("UNSPEC");
-    default:
-      return xasprintf ("<unknown address family %d>", family);
-    }
+  char *formatted = support_format_passwd (p);
+  support_check_nss (description, "passwd", formatted, expected);
 }

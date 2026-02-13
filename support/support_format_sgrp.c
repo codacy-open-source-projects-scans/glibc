@@ -1,5 +1,5 @@
-/* Convert an address family to a string.
-   Copyright (C) 2016-2026 Free Software Foundation, Inc.
+/* Convert a struct sgrp object to a string.
+   Copyright (C) 2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,23 +18,27 @@
 
 #include <support/format_nss.h>
 
-#include <netdb.h>
+#include <errno.h>
+#include <gshadow.h>
 #include <support/support.h>
+#include <support/xmemstream.h>
 
 char *
-support_format_address_family (int family)
+support_format_sgrp (const struct sgrp *s)
 {
-  switch (family)
-    {
-    case AF_INET:
-      return xstrdup ("INET");
-    case AF_INET6:
-      return xstrdup ("INET6");
-    case AF_LOCAL:
-      return xstrdup ("LOCAL");
-    case AF_UNSPEC:
-      return xstrdup ("UNSPEC");
-    default:
-      return xasprintf ("<unknown address family %d>", family);
-    }
+  if (s == NULL)
+    return xasprintf ("error: (errno %d, %m)\n", errno);
+
+  struct xmemstream mem;
+  xopen_memstream (&mem);
+
+  fprintf (mem.out, "name: %s\n", s->sg_namp);
+  fprintf (mem.out, "passwd: %s\n", s->sg_passwd);
+  for (char **ap = s->sg_adm; *ap != NULL; ++ap)
+    fprintf (mem.out, "admin: %s\n", *ap);
+  for (char **mp = s->sg_mem; *mp != NULL; ++mp)
+    fprintf (mem.out, "member: %s\n", *mp);
+
+  xfclose_memstream (&mem);
+  return mem.buffer;
 }

@@ -1,5 +1,5 @@
-/* Convert an address family to a string.
-   Copyright (C) 2016-2026 Free Software Foundation, Inc.
+/* Convert a struct servent object to a string.
+   Copyright (C) 2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,23 +18,27 @@
 
 #include <support/format_nss.h>
 
+#include <arpa/inet.h>
+#include <errno.h>
 #include <netdb.h>
 #include <support/support.h>
+#include <support/xmemstream.h>
 
 char *
-support_format_address_family (int family)
+support_format_servent (const struct servent *e)
 {
-  switch (family)
-    {
-    case AF_INET:
-      return xstrdup ("INET");
-    case AF_INET6:
-      return xstrdup ("INET6");
-    case AF_LOCAL:
-      return xstrdup ("LOCAL");
-    case AF_UNSPEC:
-      return xstrdup ("UNSPEC");
-    default:
-      return xasprintf ("<unknown address family %d>", family);
-    }
+  if (e == NULL)
+    return xasprintf ("error: (errno %d, %m)\n", errno);
+
+  struct xmemstream mem;
+  xopen_memstream (&mem);
+
+  fprintf (mem.out, "name: %s\n", e->s_name);
+  for (char **ap = e->s_aliases; *ap != NULL; ++ap)
+    fprintf (mem.out, "alias: %s\n", *ap);
+  fprintf (mem.out, "port: %d\n", ntohs (e->s_port));
+  fprintf (mem.out, "proto: %s\n", e->s_proto);
+
+  xfclose_memstream (&mem);
+  return mem.buffer;
 }

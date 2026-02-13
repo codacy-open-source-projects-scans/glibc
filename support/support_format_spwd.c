@@ -1,5 +1,5 @@
-/* Convert a struct netent object to a string.
-   Copyright (C) 2016-2026 Free Software Foundation, Inc.
+/* Convert a struct spwd object to a string.
+   Copyright (C) 2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -18,36 +18,29 @@
 
 #include <support/format_nss.h>
 
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <errno.h>
+#include <shadow.h>
 #include <support/support.h>
 #include <support/xmemstream.h>
 
 char *
-support_format_netent (const struct netent *e)
+support_format_spwd (const struct spwd *s)
 {
-  if (e == NULL)
-    {
-      char *value = support_format_herrno (h_errno);
-      char *result = xasprintf ("error: %s\n", value);
-      free (value);
-      return result;
-    }
+  if (s == NULL)
+    return xasprintf ("error: (errno %d, %m)\n", errno);
 
   struct xmemstream mem;
   xopen_memstream (&mem);
 
-  if (e->n_name != NULL)
-    fprintf (mem.out, "name: %s\n", e->n_name);
-  for (char **ap = e->n_aliases; *ap != NULL; ++ap)
-    fprintf (mem.out, "alias: %s\n", *ap);
-  if (e->n_addrtype != AF_INET)
-    fprintf (mem.out, "addrtype: %d\n", e->n_addrtype);
-  /* On alpha, e->n_net is an unsigned long.  */
-  unsigned int n_net = e->n_net;
-  fprintf (mem.out, "net: 0x%08x\n", n_net);
+  fprintf (mem.out, "sp_namp: %s\n", s->sp_namp);
+  fprintf (mem.out, "sp_pwdp: %s\n", s->sp_pwdp);
+  fprintf (mem.out, "sp_lstchg: %ld\n", s->sp_lstchg);
+  fprintf (mem.out, "sp_min: %ld\n", s->sp_min);
+  fprintf (mem.out, "sp_max: %ld\n", s->sp_max);
+  fprintf (mem.out, "sp_warn: %ld\n", s->sp_warn);
+  fprintf (mem.out, "sp_inact: %ld\n", s->sp_inact);
+  fprintf (mem.out, "sp_expire: %ld\n", s->sp_expire);
+  fprintf (mem.out, "sp_flag: %lu\n", s->sp_flag);
 
   xfclose_memstream (&mem);
   return mem.buffer;
