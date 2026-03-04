@@ -246,7 +246,7 @@ tzdata:
 core-math:
   # src/binary64/acosh/acosh.c, revision 1bd85b89
   sysdeps/ieee754/dbl-64/e_acosh.c
-  # src/binary64/atanh/atanh.c, revision c423b9a3
+  # src/binary64/atanh/atanh.c, revision 532e37dc
   sysdeps/ieee754/dbl-64/e_atanh.c
   # src/binary64/tgamma/tgamma.c, revision 0f185e23
   sysdeps/ieee754/dbl-64/e_gamma_r.c
@@ -268,7 +268,7 @@ core-math:
   sysdeps/ieee754/flt-32/e_gammaf_r.c
   # src/binary32/lgamma/lgammaf.c, revision bc385c2
   sysdeps/ieee754/flt-32/e_lgammaf_r.c
-  # src/binary32/log10/log10f.c, revision bc385c2
+  # src/binary32/log10/log10f.c, revision ebff4c43
   sysdeps/ieee754/flt-32/e_log10f.c
   # src/binary32/sinh/sinhf.c, revision bbfabd99
   sysdeps/ieee754/flt-32/e_sinhf.c
@@ -294,11 +294,11 @@ core-math:
   sysdeps/ieee754/flt-32/s_exp2m1f.c
   # src/binary32/expm1/expm1f.c, revision bc385c2
   sysdeps/ieee754/flt-32/s_expm1f.c
-  # src/binary32/log10p1/log10p1f.c revision bc385c2
+  # src/binary32/log10p1/log10p1f.c revision eb28456b
   sysdeps/ieee754/flt-32/s_log10p1f.c
-  # src/binary32/log1p/log1pf.c revision bc385c2
+  # src/binary32/log1p/log1pf.c revision 24ef43a1
   sysdeps/ieee754/flt-32/s_log1pf.c
-  # src/binary32/log2p1/log2p1f.c revision bc385c2
+  # src/binary32/log2p1/log2p1f.c revision 3fbe16be
   sysdeps/ieee754/flt-32/s_log2p1f.c
   # src/binary32/sinpi/sinpif.c, revision bbfabd99d
   sysdeps/ieee754/flt-32/s_sinpif.c
