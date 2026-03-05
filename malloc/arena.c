@@ -275,6 +275,15 @@ __ptmalloc_init (void)
     __always_fail_morecore = true;
 #endif
 
+  /* Enable THP if DEFAULT_THP_PAGESIZE is non-zero.  Avoid quering the THP
+     page size or mode since accessing /sys/kernel/mm is relatively slow and
+     might not be accessible in containers.  */
+  if (DEFAULT_THP_PAGESIZE > 0)
+    {
+      mp_.thp_mode = malloc_thp_mode_madvise;
+      mp_.thp_pagesize = DEFAULT_THP_PAGESIZE;
+    }
+
   thread_arena = &main_arena;
 
   malloc_init_state (&main_arena);
@@ -423,7 +432,7 @@ alloc_new_heap  (size_t size, size_t top_pad, size_t pagesize,
       return NULL;
     }
 
-  /* Only considere the actual usable range.  */
+  /* Only consider the actual usable range.  */
   __set_vma_name (p2, size, " glibc: malloc arena");
 
   madvise_thp (p2, size);
