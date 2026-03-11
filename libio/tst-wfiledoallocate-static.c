@@ -1,5 +1,5 @@
-/* Test module with global-dynamic TLS.  Used to trigger DTV reallocation.
-   Copyright (C) 2024-2026 Free Software Foundation, Inc.
+/* Test static link with function _IO_wfile_doallocate.
+   Copyright (C) 2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,13 +16,15 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-/* Compiled with VAR and FUNC set via -D.  FUNC requires some
-   relocation against TLS variable VAR.  */
+#include <stdio.h>
+#include <wchar.h>
 
-__thread char VAR[32768];
+/* NB: Call main directly to trigger BZ #33935.  */
 
 int
-FUNC (void)
+main (void)
 {
-  return VAR[0];
+  const wchar_t *string = L"Test String.";
+  (void) wprintf (L"%ls\n", string);
+  return 0;
 }
