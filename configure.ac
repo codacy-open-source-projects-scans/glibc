@@ -1289,13 +1289,13 @@ if test $libc_cv_have_sdata_section = yes; then
   AC_DEFINE(HAVE_SDATA_SECTION)
 fi
 
-AC_CACHE_CHECK(for libunwind-support in compiler,
-	       libc_cv_cc_with_libunwind, [
-  cat > conftest.c <<EOF
+AC_CACHE_CHECK(whether the compiler links with libunwind,
+	       libc_cv_cc_with_libunwind, [dnl
+cat > conftest.c <<EOF
 int main (void) { return 0; }
 EOF
   if ${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -static -o conftest \
-     conftest.c -v 2>&1 >/dev/null | grep ' -lunwind ' >/dev/null; then
+     conftest.c -v 2>&1 >/dev/null | grep 'libunwind.a' >/dev/null; then
     libc_cv_cc_with_libunwind=yes
   else
     libc_cv_cc_with_libunwind=no
@@ -1305,6 +1305,7 @@ AC_SUBST(libc_cv_cc_with_libunwind)
 if test $libc_cv_cc_with_libunwind = yes; then
   AC_DEFINE(HAVE_CC_WITH_LIBUNWIND)
 fi
+LIBC_CONFIG_VAR([have-cc-with-libunwind], [$libc_cv_cc_with_libunwind])
 
 ASFLAGS_config=
 AC_CACHE_CHECK(whether --noexecstack is desirable for .S files,
@@ -2143,6 +2144,26 @@ AC_CACHE_CHECK([whether $CC can link against -lgcc_s], libc_cv_have_libgcc_s, [d
 		 [libc_cv_have_libgcc_s=yes], [libc_cv_have_libgcc_s=no])
   LIBS="$old_LIBS"])
 LIBC_CONFIG_VAR([have-libgcc_s], [$libc_cv_have_libgcc_s])
+
+# Check which runtime library compiler uses
+AC_CACHE_CHECK([for the usable compiler runtime library], [libc_cv_runtime_library], [dnl
+  libc_cv_libgcc_usable=no
+  libgcc_name=`${CC-cc} $CFLAGS $CPPFLAGS -print-libgcc-file-name | sed 's:.*/::'`
+  case "$libgcc_name" in
+    libgcc*)
+      libc_cv_libgcc=-lgcc
+      libc_cv_libgcc_eh=-lgcc_eh
+      libc_cv_runtime_library=libgcc
+      ;;
+    libclang_rt*)
+      libc_cv_libgcc=-lclang_rt.builtins
+      libc_cv_libgcc_eh=
+      libc_cv_runtime_library=compiler-rt
+      ;;
+    *) AC_MSG_FAILURE([non supported compiler runtime library]) ;;
+  esac])
+LIBC_CONFIG_VAR([libgcc-name], [$libc_cv_libgcc])
+LIBC_CONFIG_VAR([libgcc_eh-name], [$libc_cv_libgcc_eh])
 
 # Check if compiler runtime library provides __sfp_handle_exceptions
 LIBC_TRY_CC_AND_TEST_LINK([for __sfp_handle_exceptions support],
