@@ -2235,9 +2235,6 @@ endif
 ifeq ($(have-thread-library),yes)
 localplt-built-dso += $(filter-out %_nonshared.a, $(shared-thread-library))
 endif
-ifneq ($(pthread-in-libc),yes)
-localplt-built-dso += $(addprefix $(common-objpfx), rt/librt.so)
-endif
 
 vpath localplt.data $(+sysdep_dirs)
 
@@ -2717,10 +2714,6 @@ $(objpfx)tst-ldconfig-soname.out : tst-ldconfig-soname.sh \
 # Test static linking of all the libraries we can possibly link
 # together.  Note that in some configurations this may be less than the
 # complete list of libraries we build but we try to maxmimize this list.
-ifeq ($(pthread-in-libc),no)
-$(objpfx)tst-linkall-static: \
-  $(common-objpfx)resolv/libanl.a
-endif
 $(objpfx)tst-linkall-static: \
   $(common-objpfx)math/libm.a \
   $(common-objpfx)resolv/libresolv.a \
