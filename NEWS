@@ -16,6 +16,8 @@ Major new features:
 * The SVID handling for cosh and sinh were moved to compat symbols, allowing
   improvements in performance.
 
+* New locale added: hrx_BR (Hunsrik language spoken in Brazil).
+
 Deprecated and removed features, and other changes affecting compatibility:
 
 * Although malloc and related functions currently return pointers
@@ -41,6 +43,10 @@ found in the advisories directory of the release tarball:
   GLIBC-SA-2026-0006:
     gethostbyaddr and gethostbyaddr_r return invalid DNS hostnames
     (CVE-2026-4438)
+
+  GLIBC-SA-2026-0007:
+    iconv crash due to assertion failure with untrusted input
+    (CVE-2026-4046)
 
 The following bugs were resolved with this release:
 
