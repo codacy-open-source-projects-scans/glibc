@@ -1,5 +1,5 @@
-/* Symbol redirection for loader/static initialization code.
-   Copyright (C) 2025-2026 Free Software Foundation, Inc.
+/* Support functions for pointer arithmetic.
+   Copyright (C) 2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -16,13 +16,12 @@
    License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#ifndef _DL_IFUNC_GENERIC_H
-#define _DL_IFUNC_GENERIC_H
+#ifndef _POINTER_ARITH_H
+#define _POINTER_ARITH_H 1
 
-#ifndef SHARED
-asm ("memcpy = __memcpy_generic");
-asm ("memset = __memset_generic");
-asm ("memcpy = __memcpy_generic");
-#endif
+#include <stddef.h>
 
-#endif
+/* Returns difference in bytes between addresses of two pointers.  */
+ptrdiff_t support_address_diff (const void *lhs, const void *rhs);
+
+#endif /* _POINTER_ARITH_H */
