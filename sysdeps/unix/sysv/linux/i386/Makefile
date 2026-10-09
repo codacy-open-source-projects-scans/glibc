@@ -28,3 +28,21 @@ ifeq ($(subdir),rt)
 librt-routines += sysdep
 librt-shared-only-routines += sysdep
 endif
+
+ifeq ($(subdir),elf)
+sysdep_routines += \
+  dl-mmap \
+  dl-writev \
+  # sysdep-routines
+
+# Called during static library initialization, so turn stack-protection
+# off for non-shared builds.
+CFLAGS-dl-mmap.o = $(no-stack-protector)
+CFLAGS-dl-mmap.op = $(no-stack-protector)
+CFLAGS-dl-writev.o = $(no-stack-protector)
+CFLAGS-dl-writev.op = $(no-stack-protector)
+
+# Non-PAE kernels map the transparent huge page at the PGD level (4MB),
+# while PAE and 64-bit kernels use a 2MB PMD huge page.
+THP-PAGE-SIZE = 0x400000
+endif

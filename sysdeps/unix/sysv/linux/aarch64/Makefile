@@ -1,4 +1,12 @@
 ifeq ($(subdir),elf)
+# The PMD transparent huge page size depends of the page size:
+# *  4Kb ->   2MB
+# * 16Kb ->  32MB
+# * 64Kb -> 512MB
+# Use 32MB for now.  The 512MB is larger than MAX_THP_PAGESIZE, and
+# the THP tests are marked as unsupported at runtime.
+THP-PAGE-SIZE = 0x2000000
+
 tests += \
   tst-tlsdesc-pac \
   # tests
@@ -9,6 +17,21 @@ modules-names += \
 LDFLAGS-tst-tlsdesc-pac = -rdynamic
 
 $(objpfx)tst-tlsdesc-pac.out: $(objpfx)tst-tlsdesc-pac-mod.so
+
+ifeq (yes,$(enable-static-pie))
+tests += \
+  tst-cpu-tunable-static-pie \
+  # tests
+tests-static += \
+  tst-cpu-tunable-static-pie \
+  # tests-static
+tst-cpu-tunable-static-pie-TUNABLES = glibc.cpu.hwcaps=-midr,-sve,-mops
+endif
+
+tests-internal += \
+  tst-mtemode-tunable \
+  # tests-internal
+
 endif
 
 ifeq ($(subdir),misc)

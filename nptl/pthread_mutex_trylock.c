@@ -170,7 +170,7 @@ ___pthread_mutex_trylock (pthread_mutex_t *mutex)
 	    {
 	      /* This mutex is now not recoverable.  */
 	      mutex->__data.__count = 0;
-	      if (oldval == id)
+	      if (oldval == 0)
 		lll_unlock (mutex->__data.__lock,
 			    PTHREAD_ROBUST_MUTEX_PSHARED (mutex));
 	      /* FIXME This violates the mutex destruction requirements.  See
@@ -396,15 +396,13 @@ ___pthread_mutex_trylock (pthread_mutex_t *mutex)
 			  >> PTHREAD_MUTEX_PRIO_CEILING_SHIFT;
 
 	    if (__pthread_current_priority () > ceiling)
-	      {
-		if (oldprio != -1)
-		  __pthread_tpp_change_priority (oldprio, -1);
-		return EINVAL;
-	      }
+	      return __pthread_mutex_priority_error (EINVAL, oldprio);
 
 	    int retval = __pthread_tpp_change_priority (oldprio, ceiling);
-	    if (retval)
-	      return retval;
+	    if (retval != 0)
+	      /* Undo the adjustment from the previous loop iteration
+		 (if any, first iteration has -1 and skips adjustment).  */
+	      return __pthread_mutex_priority_error (retval, oldprio);
 
 	    ceilval = ceiling << PTHREAD_MUTEX_PRIO_CEILING_SHIFT;
 	    oldprio = ceiling;

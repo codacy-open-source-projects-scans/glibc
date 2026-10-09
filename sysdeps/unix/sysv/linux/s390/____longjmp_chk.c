@@ -23,18 +23,17 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbit.h>
 #include <signal.h>
 #include <sys/syscall.h>
 
 #define __longjmp ____longjmp_chk
 
-#define CHECK_SP(env, guard) \
+#define CHECK_SP(new_sp) \
   do									\
     {									\
       uintptr_t cur_sp;							\
-      uintptr_t new_sp = env->__gregs[9];				\
       __asm__ ("lgr %0, %%r15" : "=r" (cur_sp));			\
-      new_sp ^= guard;							\
       if (new_sp < cur_sp)						\
 	{								\
 	  stack_t oss;							\
